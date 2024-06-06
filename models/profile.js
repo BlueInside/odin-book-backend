@@ -1,20 +1,19 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const profileSchema = new Schema({
-  user: {
-    type: Schema.Types.ObjectId,
-    ref: 'User', // Reference to the User model
-    required: true,
-    unique: true, // Ensures that each user can only have one profile
+const profileSchema = new Schema(
+  {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      unique: true,
+    },
+    birthday: Date,
+    interests: [String],
+    hobby: [String],
   },
-  birthday: Date,
-  interests: [String],
-  hobby: [String],
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+  { timestamps: true }
+);
 
 module.exports = mongoose.model('Profile', profileSchema);
