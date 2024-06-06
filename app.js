@@ -8,9 +8,19 @@ const logger = require('morgan');
 require('./config/mongo');
 
 const indexRouter = require('./routes/index');
-const usersRouter = require('./routes/users');
+const usersRouter = require('./routes/user');
 
 const app = express();
+
+// Routes
+const userRoutes = require('./routes/user');
+const postRoutes = require('./routes/post');
+const commentRoutes = require('./routes/comment');
+const likeRoutes = require('./routes/like');
+const followRoutes = require('./routes/follow');
+const authRoutes = require('./routes/auth');
+const profileRoutes = require('./routes/profile');
+const mediaRoutes = require('./routes/media');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -23,7 +33,14 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/', followRoutes);
+app.use('/users', userRoutes);
+app.use('/posts', postRoutes);
+app.use('/comments', commentRoutes);
+app.use('/likes', likeRoutes);
+app.use('/auth', authRoutes);
+app.use('/profile', profileRoutes);
+app.use('/media', mediaRoutes);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
