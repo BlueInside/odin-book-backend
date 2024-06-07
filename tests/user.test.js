@@ -97,7 +97,6 @@ describe('GET /users/:userId', () => {
 
     const response = await request(app).get(`/users/${fakeUser._id}`);
 
-    console.log(response.body);
     expect(response.status).toBe(200);
     expect(response.body.user).toBeDefined();
     expect(response.body.user._id).toEqual(fakeUser._id);
