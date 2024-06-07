@@ -49,13 +49,24 @@ app.use(function (req, res, next) {
 
 // error handler
 app.use(function (err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+  const isDevelopment = req.app.get('env') === 'development';
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
+  let errorResponse = {
+    success: false,
+    error: {
+      message: err.message || 'Server Error',
+    },
+  };
+
+  if (isDevelopment) {
+    errorResponse.error.stack = err.stack;
+  }
+
+  const statusCode = err.status || 500;
+
+  console.error(err);
+
+  res.status(statusCode).json(errorResponse);
 });
 
 module.exports = app;
