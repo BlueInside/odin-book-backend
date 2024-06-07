@@ -2,10 +2,12 @@ const userRoute = require('../routes/user');
 const request = require('supertest');
 const express = require('express');
 const User = require('../models/user');
+const Post = require('../models/post');
 const mongoose = require('mongoose');
 const app = express();
 
 jest.mock('../models/user');
+jest.mock('../models/post');
 
 // Middleware
 app.use(express.json());
@@ -86,7 +88,10 @@ describe('GET /users', () => {
 
 describe('GET /users/:userId', () => {
   const id = new mongoose.Types.ObjectId();
+  mongoose.Types.ObjectId.isValid = jest.fn();
+
   it('Should return a user when provided a valid user ID', async () => {
+    mongoose.Types.ObjectId.isValid.mockReturnValue(true);
     const fakeUser = {
       _id: id.toString(),
       firstName: 'John',
@@ -103,6 +108,7 @@ describe('GET /users/:userId', () => {
   });
 
   it('Should return 400 for an invalid user ID', async () => {
+    mongoose.Types.ObjectId.isValid.mockReturnValue(false);
     const invalidUserId = '123';
     const response = await request(app).get(`/users/${invalidUserId}`);
     expect(response.status).toBe(400);
@@ -110,11 +116,65 @@ describe('GET /users/:userId', () => {
   });
 
   it('Should return 404 if no user is found with the provided ID', async () => {
+    mongoose.Types.ObjectId.isValid.mockReturnValue(true);
     const nonExistingUserId = id;
     User.findById.mockImplementation(() => ({ select: () => null })); // Mock findById to return a fake user
 
     const response = await request(app).get(`/users/${nonExistingUserId}`);
     expect(response.status).toBe(404);
     expect(response.body).toHaveProperty('error', 'User not found.');
+  });
+});
+
+describe('GET /users/:userId/posts', () => {
+  const id = new mongoose.Types.ObjectId();
+
+  it('Should return all posts for a valid user ID', async () => {
+    mongoose.Types.ObjectId.isValid.mockReturnValue(true);
+    const mockPosts = [
+      {
+        title: 'First Post',
+        content: 'Content of the first post',
+        createdAt: new Date(),
+      },
+      {
+        title: 'Second Post',
+        content: 'Content of the second post',
+        createdAt: new Date(),
+      },
+    ];
+
+    Post.find.mockImplementation(() => ({ sort: () => mockPosts })); // Mock Post.find to return mock posts
+    Post.countDocuments.mockResolvedValue(mockPosts.length); // Mock countDocuments
+
+    const userId = id;
+    const response = await request(app).get(`/users/${userId}/posts`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.posts.length).toBe(2);
+    expect(response.body.totalPosts).toBe(2);
+  });
+
+  it('Should return 400 for an invalid user ID', async () => {
+    mongoose.Types.ObjectId.isValid.mockReturnValue(false); // Mock isValid to return false
+
+    const response = await request(app).get('/users/123/posts');
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty('error', 'Invalid user ID.');
+  });
+
+  it('Should return 404 if no posts are found for the user', async () => {
+    mongoose.Types.ObjectId.isValid.mockReturnValue(true); // Assume ID is valid
+    Post.find.mockImplementation(() => ({ sort: () => [] })); // Mock find to return an empty array
+    Post.countDocuments.mockResolvedValue(0); // Mock countDocuments
+
+    const userId = id;
+    const response = await request(app).get(`/users/${userId}/posts`);
+
+    expect(response.status).toBe(404);
+    expect(response.body).toHaveProperty(
+      'error',
+      'This user has no posts yet.'
+    );
   });
 });
