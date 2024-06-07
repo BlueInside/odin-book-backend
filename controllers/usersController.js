@@ -14,7 +14,7 @@ const getAllUsers = asyncHandler(async (req, res, next) => {
   }
 
   const users = await User.find(query, 'firstName lastName')
-    .sort({ username: 1 })
+    .sort({ firstName: 1 })
     .limit(10);
 
   if (!users.length) {
