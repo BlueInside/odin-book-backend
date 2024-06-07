@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../models/user');
+const mongoose = require('mongoose');
 
 const getAllUsers = asyncHandler(async (req, res, next) => {
   // return list of all users if no search query
@@ -20,13 +21,24 @@ const getAllUsers = asyncHandler(async (req, res, next) => {
   if (!users.length) {
     return res.status(404).json({ error: 'Users not found.' });
   }
+
   return res.status(200).json({ users: users });
 });
 
 const getUser = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
 
-  res.status(200).send(`GET /users/${userId} not implemented`);
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ error: 'Invalid user ID.' });
+  }
+
+  const user = await User.findById(userId).select('-password');
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found.' });
+  }
+
+  return res.status(200).json({ user: user });
 });
 
 const getUserPosts = asyncHandler(async (req, res, next) => {
