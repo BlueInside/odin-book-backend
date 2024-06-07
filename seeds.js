@@ -1,5 +1,6 @@
-const { faker } = require('@faker-js/faker');
+require('./config/mongo');
 
+const { faker } = require('@faker-js/faker');
 const User = require('./models/user');
 const Profile = require('./models/profile');
 const Post = require('./models/post');
@@ -8,15 +9,13 @@ const Like = require('./models/like');
 const Follow = require('./models/follow');
 const Media = require('./models/media');
 
-require('./config/mongo');
-
 async function seedDatabase() {
   const users = [];
   const profiles = [];
   const posts = [];
   const comments = [];
-  const likes = [];
-  const follows = [];
+  const likes = new Set();
+  const follows = new Set();
   const media = [];
 
   const emails = new Set();
@@ -81,25 +80,31 @@ async function seedDatabase() {
     });
     await comment.save();
     comments.push(comment);
+  }
 
-    const like = new Like({
-      user: faker.helpers.arrayElement(users)._id,
-      post: faker.helpers.arrayElement(posts)._id,
-    });
-    await like.save();
-    likes.push(like);
+  while (likes.size < 50) {
+    const user = faker.helpers.arrayElement(users)._id;
+    const post = faker.helpers.arrayElement(posts)._id;
+    const likeKey = `${user}_${post}`;
+    if (!likes.has(likeKey)) {
+      const like = new Like({ user, post });
+      await like.save();
+      likes.add(likeKey);
+    }
+  }
 
-    const follow = new Follow({
-      follower: faker.helpers.arrayElement(users)._id,
-      followed: faker.helpers.arrayElement(users)._id,
-    });
-    await follow.save();
-    follows.push(follow);
-
-    const post = await Post.findById(comment.post);
-    post.comments.push(comment._id);
-    await post.save();
+  while (follows.size < 50) {
+    const follower = faker.helpers.arrayElement(users)._id;
+    const followed = faker.helpers.arrayElement(users)._id;
+    const followKey = `${follower}_${followed}`;
+    if (follower !== followed && !follows.has(followKey)) {
+      const follow = new Follow({ follower, followed });
+      await follow.save();
+      follows.add(followKey);
+    }
   }
 }
 
-seedDatabase().catch((error) => console.error(error));
+seedDatabase()
+  .then(() => console.log('Populating DB finished successfully'))
+  .catch((error) => console.error(error));
