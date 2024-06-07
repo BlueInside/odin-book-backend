@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
+const options = {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+};
+
 const userSchema = new Schema(
   {
     firstName: { type: String, required: true, index: true },
@@ -12,8 +18,11 @@ const userSchema = new Schema(
     dateJoined: { type: Date, default: Date.now },
     profile: { type: Schema.Types.ObjectId, ref: 'Profile' },
   },
-
-  { timestamps: true }
+  options
 );
+
+userSchema.virtual('fullName').get(function () {
+  return `${this.firstName} ${this.lastName}`;
+});
 
 module.exports = mongoose.model('User', userSchema);
