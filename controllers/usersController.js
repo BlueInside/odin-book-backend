@@ -30,10 +30,6 @@ const getAllUsers = asyncHandler(async (req, res, next) => {
 const getUser = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    return res.status(400).json({ error: 'Invalid user ID.' });
-  }
-
   const user = await User.findById(userId).select('-password');
 
   if (!user) {
