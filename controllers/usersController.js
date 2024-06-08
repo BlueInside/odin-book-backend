@@ -80,10 +80,6 @@ const updateUser = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
   const { firstName, lastName, profilePicture, bio } = req.body;
 
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    return res.status(400).json({ error: 'Invalid user ID.' });
-  }
-
   /*
    Authenticate that the logged-in user matches the userId in params
    DISABLED WHILE PASSPORT IS NOT SET UP!
