@@ -57,10 +57,6 @@ const getUserPosts = asyncHandler(async (req, res, next) => {
 const getUserLikes = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    return res.status(400).json({ error: 'Invalid user ID.' });
-  }
-
   const likes = await Like.find({ user: userId }).populate('post');
 
   if (!likes.length) {
