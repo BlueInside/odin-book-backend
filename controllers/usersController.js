@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const User = require('../models/user');
 const Post = require('../models/post');
+const Like = require('../models/like');
 const mongoose = require('mongoose');
 
 const getAllUsers = asyncHandler(async (req, res, next) => {
@@ -63,23 +64,117 @@ const getUserPosts = asyncHandler(async (req, res, next) => {
 
 const getUserLikes = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
-  res.status(200).send(`GET /users/${userId}/likes not implemented`);
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ error: 'Invalid user ID.' });
+  }
+
+  const likes = await Like.find({ user: userId }).populate('post');
+
+  if (!likes.length) {
+    return res.status(404).json({ error: `This user has no liked posts yet.` });
+  }
+
+  const likesCount = await Like.countDocuments({ user: userId });
+
+  return res.status(200).json({ likes: likes, likesCount: likesCount });
 });
+
+// WIll use Github Oath2 to create users
 const createUser = asyncHandler(async (req, res, next) => {
-  const userData = req.body;
-  res.status(201).send(`POST /users not implemented`);
+  // Validate sanitize body!
+  return res.status(201).json({ message: 'Not implemented!' });
 });
 
 const updateUser = asyncHandler(async (req, res, next) => {
+  // Sanitize and validate input!
   // Authenticated users only
   const { userId } = req.params;
-  res.status(200).send(`PUT /users/${userId} not implemented`);
+  const { firstName, lastName, profilePicture, bio } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ error: 'Invalid user ID.' });
+  }
+
+  /*
+   Authenticate that the logged-in user matches the userId in params
+   DISABLED WHILE PASSPORT IS NOT SET UP!
+   if (req.session.userId !== userId) {
+    return res
+     .status(403)
+      .json({ error: 'You do not have permission to update this profile.' });
+    }
+  */
+
+  const updates = {
+    firstName: firstName,
+    lastName: lastName || '',
+    profilePicture: profilePicture || '',
+    bio: bio || '',
+  };
+
+  try {
+    // Find by ID and update the user
+    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+      new: true, // Return the modified document rather than the original
+    });
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    return res.status(200).json({ user: updatedUser });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ error: 'This email is already in use.' });
+    }
+    return res
+      .status(500)
+      .json({ error: 'Something went wrong during the update.' });
+  }
 });
 
 const deleteUser = asyncHandler(async (req, res, next) => {
   // Authenticated users only
   const { userId } = req.params;
-  res.status(204).send(`Delete /users/${userId} not implemented`);
+
+  /*
+  if (req.session.userId !== userId) {
+    return res
+      .status(403)
+      .json({ error: 'You do not have permission to delete this profile.' });
+  } */
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    const anonymizedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        firstName: 'Anonymous',
+        lastName: '',
+        email: `no-reply@example.com${Date.now()}`,
+        isActive: false,
+        profilePicture: '',
+        bio: '',
+      },
+      { new: true }
+    );
+
+    if (!anonymizedUser) {
+      return res.status(404).json({ error: 'Unable to anonymize user.' });
+    }
+
+    // Send successful response
+    return res.status(200).json({ user: anonymizedUser });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: 'Something went wrong during the deletion process.' });
+  }
 });
 
 module.exports = {
