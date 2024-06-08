@@ -114,7 +114,10 @@ describe('GET /users/:userId', () => {
     const invalidUserId = '123';
     const response = await request(app).get(`/users/${invalidUserId}`);
     expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty('error', 'Invalid user ID.');
+    expect(response.body.errors[0]).toHaveProperty(
+      'msg',
+      'User ID must be a valid MongoDB ObjectId.'
+    );
   });
 
   it('Should return 404 if no user is found with the provided ID', async () => {
