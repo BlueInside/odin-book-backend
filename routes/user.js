@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/usersController');
-const { getAllUsersValidation } = require('../lib/userValidation');
+const {
+  getAllUsersValidation,
+  getUserValidation,
+} = require('../lib/userValidation');
 
 router.get('/', getAllUsersValidation(), userController.getAllUsers);
-router.get('/:userId', userController.getUser);
+router.get('/:userId', getUserValidation(), userController.getUser);
 router.get('/:userId/posts', userController.getUserPosts);
 router.get('/:userId/likes', userController.getUserLikes);
 router.post('/', userController.createUser);
