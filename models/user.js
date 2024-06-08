@@ -10,11 +10,12 @@ const options = {
 const userSchema = new Schema(
   {
     firstName: { type: String, required: true, index: true },
-    lastName: { type: String, required: true, index: true },
+    lastName: { type: String, index: true },
     password: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     profilePicture: { type: String },
     bio: { type: String },
+    isActive: { type: Boolean, default: true },
     dateJoined: { type: Date, default: Date.now },
     profile: { type: Schema.Types.ObjectId, ref: 'Profile' },
   },
