@@ -219,7 +219,10 @@ describe('GET /users/:userId/likes', () => {
 
     const response = await request(app).get('/users/123/likes');
     expect(response.status).toBe(400);
-    expect(response.body).toHaveProperty('error', 'Invalid user ID.');
+    expect(response.body.errors[0]).toHaveProperty(
+      'msg',
+      'User ID must be a valid MongoDB ObjectId.'
+    );
   });
 
   it('Should return 404 if no liked posts are found for the user', async () => {
