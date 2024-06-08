@@ -3,11 +3,13 @@ const request = require('supertest');
 const express = require('express');
 const User = require('../models/user');
 const Post = require('../models/post');
+const Like = require('../models/like');
 const mongoose = require('mongoose');
 const app = express();
 
 jest.mock('../models/user');
 jest.mock('../models/post');
+jest.mock('../models/like');
 
 // Middleware
 app.use(express.json());
@@ -175,6 +177,165 @@ describe('GET /users/:userId/posts', () => {
     expect(response.body).toHaveProperty(
       'error',
       'This user has no posts yet.'
+    );
+  });
+});
+
+describe('GET /users/:userId/likes', () => {
+  const id = new mongoose.Types.ObjectId().toString();
+  it('Should return all liked posts for a valid user ID', async () => {
+    mongoose.Types.ObjectId.isValid.mockReturnValue(true); // Mock isValid to return true
+
+    const mockLikes = [
+      {
+        post: { title: 'First Post', content: 'Here is some content' },
+        createdAt: new Date(),
+      },
+      {
+        post: { title: 'Second Post', content: 'Here is some more content' },
+        createdAt: new Date(),
+      },
+    ];
+
+    Like.find.mockImplementation(() => ({ populate: () => mockLikes })); // Mock Like.find.populate to return mock likes
+    Like.countDocuments.mockResolvedValue(mockLikes.length); // Mock countDocuments
+
+    const userId = id;
+    const response = await request(app).get(`/users/${userId}/likes`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.likes.length).toBe(2);
+    expect(response.body.likesCount).toBe(2);
+  });
+
+  it('Should return 400 for an invalid user ID', async () => {
+    mongoose.Types.ObjectId.isValid.mockReturnValue(false); // Mock isValid to return false
+
+    const response = await request(app).get('/users/123/likes');
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty('error', 'Invalid user ID.');
+  });
+
+  it('Should return 404 if no liked posts are found for the user', async () => {
+    mongoose.Types.ObjectId.isValid.mockReturnValue(true); // Assume ID is valid
+    Like.find.mockImplementation(() => ({ populate: () => [] })); // Mock find to return an empty array
+    Like.countDocuments.mockResolvedValue(0); // Mock countDocuments
+
+    const userId = '507f1f77bcf86cd799439011';
+    const response = await request(app).get(`/users/${userId}/likes`);
+
+    expect(response.status).toBe(404);
+    expect(response.body).toHaveProperty(
+      'error',
+      'This user has no liked posts yet.'
+    );
+  });
+});
+
+describe('PUT /users/:userId', () => {
+  const id = new mongoose.Types.ObjectId().toString();
+  it('should update the user successfully', async () => {
+    const userId = id;
+    const fakeUser = {
+      _id: userId,
+      firstName: 'John',
+      lastName: 'Doe',
+      profilePicture: 'url_to_image',
+      bio: 'New bio',
+    };
+
+    User.findByIdAndUpdate.mockResolvedValue(fakeUser); // Mock findByIdAndUpdate to resolve with fake user
+
+    const response = await request(app).put(`/users/${userId}`).send({
+      firstName: 'John',
+      lastName: 'Doe',
+      bio: 'New bio',
+      profilePicture: 'url_to_image',
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.user).toEqual(fakeUser);
+  });
+
+  // Change when passport is implemented.
+  it.skip("should return 403 if user tries to update another user's profile", async () => {
+    const userId = id;
+
+    const response = await request(app)
+      .put(`/users/${userId}`)
+      .send({ firstName: 'John' });
+
+    expect(response.status).toBe(403);
+    expect(response.body.error).toBe(
+      'You do not have permission to update this profile.'
+    );
+  });
+
+  it('should return 404 if the user is not found', async () => {
+    const userId = id;
+    User.findByIdAndUpdate.mockResolvedValue(null); // Mock findByIdAndUpdate to resolve with null
+
+    const response = await request(app)
+      .put(`/users/${userId}`)
+      .send({ firstName: 'John' });
+
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe('User not found.');
+  });
+
+  it('should handle database errors', async () => {
+    const userId = id;
+    const errorMessage = { message: 'Database failed', code: 500 };
+    User.findByIdAndUpdate.mockRejectedValue(errorMessage); // Mock findByIdAndUpdate to reject with error
+
+    const response = await request(app)
+      .put(`/users/${userId}`)
+      .send({ firstName: 'John' });
+
+    expect(response.status).toBe(500);
+    expect(response.body.error).toBe('Something went wrong during the update.');
+  });
+});
+
+describe('DELETE /users/:userId', () => {
+  const id = new mongoose.Types.ObjectId().toString();
+  it('should successfully anonymize the user', async () => {
+    const userId = id;
+    const mockUser = {
+      _id: userId,
+      firstName: 'Anonymous',
+      lastName: '',
+      email: 'no-reply@example.com',
+      isActive: false,
+      profilePicture: '',
+      bio: '',
+    };
+
+    User.findById.mockResolvedValue(mockUser);
+    User.findByIdAndUpdate.mockResolvedValue(mockUser);
+
+    const response = await request(app).delete(`/users/${userId}`);
+    expect(response.status).toBe(200);
+    expect(response.body.user).toEqual(mockUser);
+  });
+
+  it('should return 404 if the user does not exist', async () => {
+    const userId = id;
+    User.findById.mockResolvedValue(null);
+
+    const response = await request(app).delete(`/users/${userId}`);
+    expect(response.status).toBe(404);
+    expect(response.body.error).toBe('User not found.');
+  });
+
+  it('should handle server errors gracefully', async () => {
+    const userId = id;
+    User.findById.mockRejectedValue(new Error('Internal Server Error'));
+
+    const response = await request(app).delete(`/users/${userId}`);
+    expect(response.status).toBe(500);
+    expect(response.body.error).toBe(
+      'Something went wrong during the deletion process.'
     );
   });
 });
