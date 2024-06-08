@@ -6,6 +6,7 @@ const {
   getUserValidation,
   getUserPostsValidation,
   getUserLikesValidation,
+  updateUserValidation,
 } = require('../lib/userValidation');
 
 router.get('/', getAllUsersValidation(), userController.getAllUsers);
@@ -26,7 +27,7 @@ router.get(
 
 router.post('/', userController.createUser);
 
-router.put('/:userId', userController.updateUser);
+router.put('/:userId', updateUserValidation(), userController.updateUser);
 
 router.delete('/:userId', userController.deleteUser);
 
