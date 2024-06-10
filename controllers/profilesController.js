@@ -56,11 +56,20 @@ const updateProfile = asyncHandler(async (req, res, next) => {
 });
 
 const deleteProfile = asyncHandler(async (req, res, next) => {
-  // Only authenticated users
-  const { id } = req.params;
-  return res
-    .status(200)
-    .send(`Delete profile ${id} controller is NOT IMPLEMENTED`);
+  const { profileId } = req.params;
+  const userRole = req.user.role;
+
+  if (userRole !== 'admin') {
+    return res.status(403).json({ message: 'Unauthorized action!' });
+  }
+
+  const profile = await Profile.findByIdAndDelete(profileId);
+
+  if (!profile) {
+    return res.status(404).json({ message: 'Profile not found!' });
+  }
+
+  return res.status(200).json({ message: 'Profile deleted' });
 });
 
 module.exports = {
