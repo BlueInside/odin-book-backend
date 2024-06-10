@@ -90,20 +90,28 @@ describe('GET /users', () => {
 });
 
 describe('GET /users/:userId', () => {
-  const id = new mongoose.Types.ObjectId();
+  const id = new mongoose.Types.ObjectId().toString();
+  const userData = {
+    id: id,
+    firstName: 'karol',
+    role: 'admin',
+  };
+  const token = generateToken(userData);
   mongoose.Types.ObjectId.isValid = jest.fn();
 
   it('Should return a user when provided a valid user ID', async () => {
     mongoose.Types.ObjectId.isValid.mockReturnValue(true);
     const fakeUser = {
-      _id: id.toString(),
+      _id: id,
       firstName: 'John',
       lastName: 'Doe',
       email: 'john.doe@example.com',
     };
     User.findById.mockImplementation(() => ({ select: () => fakeUser })); // Mock findById to return a fake user
 
-    const response = await request(app).get(`/users/${fakeUser._id}`);
+    const response = await request(app)
+      .get(`/users/${fakeUser._id}`)
+      .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
     expect(response.body.user).toBeDefined();
@@ -113,7 +121,9 @@ describe('GET /users/:userId', () => {
   it('Should return 400 for an invalid user ID', async () => {
     mongoose.Types.ObjectId.isValid.mockReturnValue(false);
     const invalidUserId = '123';
-    const response = await request(app).get(`/users/${invalidUserId}`);
+    const response = await request(app)
+      .get(`/users/${invalidUserId}`)
+      .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(400);
     expect(response.body.errors[0]).toHaveProperty(
       'msg',
@@ -126,7 +136,9 @@ describe('GET /users/:userId', () => {
     const nonExistingUserId = id;
     User.findById.mockImplementation(() => ({ select: () => null })); // Mock findById to return a fake user
 
-    const response = await request(app).get(`/users/${nonExistingUserId}`);
+    const response = await request(app)
+      .get(`/users/${nonExistingUserId}`)
+      .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(404);
     expect(response.body).toHaveProperty('error', 'User not found.');
   });
