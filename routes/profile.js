@@ -7,6 +7,7 @@ const {
   getProfileValidation,
   updateProfileValidation,
   createProfileValidation,
+  deleteProfileValidation,
 } = require('../lib/profileValidation.js');
 
 router.get(
@@ -30,6 +31,11 @@ router.put(
   profilesController.updateProfile
 );
 
-router.delete('/', profilesController.deleteProfile);
+router.delete(
+  '/:profileId',
+  authenticateToken,
+  deleteProfileValidation(),
+  profilesController.deleteProfile
+);
 
 module.exports = router;
