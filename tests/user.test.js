@@ -6,6 +6,7 @@ const Post = require('../models/post');
 const Like = require('../models/like');
 const mongoose = require('mongoose');
 const app = express();
+const { generateToken } = require('../config/jwt');
 
 jest.mock('../models/user');
 jest.mock('../models/post');
@@ -243,6 +244,15 @@ describe('GET /users/:userId/likes', () => {
 
 describe('PUT /users/:userId', () => {
   const id = new mongoose.Types.ObjectId().toString();
+
+  const payloadData = {
+    id: id,
+    firstName: 'John',
+    role: 'admin',
+  };
+
+  const token = generateToken(payloadData);
+
   it('should update the user successfully', async () => {
     const userId = id;
     const fakeUser = {
@@ -255,12 +265,15 @@ describe('PUT /users/:userId', () => {
 
     User.findByIdAndUpdate.mockResolvedValue(fakeUser); // Mock findByIdAndUpdate to resolve with fake user
 
-    const response = await request(app).put(`/users/${userId}`).send({
-      firstName: 'John',
-      lastName: 'Doe',
-      bio: 'New bio',
-      profilePicture: 'url_to_image',
-    });
+    const response = await request(app)
+      .put(`/users/${userId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        firstName: 'John',
+        lastName: 'Doe',
+        bio: 'New bio',
+        profilePicture: 'url_to_image',
+      });
 
     expect(response.status).toBe(200);
     expect(response.body.user).toEqual(fakeUser);
@@ -272,6 +285,7 @@ describe('PUT /users/:userId', () => {
 
     const response = await request(app)
       .put(`/users/${userId}`)
+      .set('Authorization', `Bearer ${token}`)
       .send({ firstName: 'John' });
 
     expect(response.status).toBe(403);
@@ -286,6 +300,7 @@ describe('PUT /users/:userId', () => {
 
     const response = await request(app)
       .put(`/users/${userId}`)
+      .set('Authorization', `Bearer ${token}`)
       .send({ firstName: 'John' });
 
     expect(response.status).toBe(404);
@@ -299,6 +314,7 @@ describe('PUT /users/:userId', () => {
 
     const response = await request(app)
       .put(`/users/${userId}`)
+      .set('Authorization', `Bearer ${token}`)
       .send({ firstName: 'John' });
 
     expect(response.status).toBe(500);
@@ -308,6 +324,14 @@ describe('PUT /users/:userId', () => {
 
 describe('DELETE /users/:userId', () => {
   const id = new mongoose.Types.ObjectId().toString();
+
+  const payloadData = {
+    id: id,
+    firstName: 'John',
+    role: 'admin',
+  };
+
+  const token = generateToken(payloadData);
   it('should successfully anonymize the user', async () => {
     const userId = id;
     const mockUser = {
@@ -323,7 +347,10 @@ describe('DELETE /users/:userId', () => {
     User.findById.mockResolvedValue(mockUser);
     User.findByIdAndUpdate.mockResolvedValue(mockUser);
 
-    const response = await request(app).delete(`/users/${userId}`);
+    const response = await request(app)
+      .delete(`/users/${userId}`)
+      .set('Authorization', `Bearer ${token}`);
+
     expect(response.status).toBe(200);
     expect(response.body.user).toEqual(mockUser);
   });
@@ -332,7 +359,10 @@ describe('DELETE /users/:userId', () => {
     const userId = id;
     User.findById.mockResolvedValue(null);
 
-    const response = await request(app).delete(`/users/${userId}`);
+    const response = await request(app)
+      .delete(`/users/${userId}`)
+      .set('Authorization', `Bearer ${token}`);
+
     expect(response.status).toBe(404);
     expect(response.body.error).toBe('User not found.');
   });
@@ -341,7 +371,10 @@ describe('DELETE /users/:userId', () => {
     const userId = id;
     User.findById.mockRejectedValue(new Error('Internal Server Error'));
 
-    const response = await request(app).delete(`/users/${userId}`);
+    const response = await request(app)
+      .delete(`/users/${userId}`)
+      .set('Authorization', `Bearer ${token}`);
+
     expect(response.status).toBe(500);
     expect(response.body.error).toBe(
       'Something went wrong during the deletion process.'
