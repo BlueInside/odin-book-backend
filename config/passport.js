@@ -9,8 +9,6 @@ const verify = async (accessToken, refreshToken, profile, cb) => {
   try {
     let user = await User.findOne({ githubId: profile.id });
 
-    console.log(accessToken, refreshToken);
-
     if (!user) {
       user = await User.create({
         githubId: profile.id,
@@ -19,6 +17,7 @@ const verify = async (accessToken, refreshToken, profile, cb) => {
         email: profile.email || '', // Handle the case where email may be null
         profilePicture: profile.photos[0].value || '', // Use the avatar URL if available
         bio: profile._json.bio || '', // Access bio from the _json object safely
+        role: 'user',
       });
     }
 
