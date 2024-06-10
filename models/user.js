@@ -18,6 +18,12 @@ const userSchema = new Schema(
     isActive: { type: Boolean, default: true },
     dateJoined: { type: Date, default: Date.now },
     profile: { type: Schema.Types.ObjectId, ref: 'Profile' },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      required: true,
+      default: 'user',
+    },
   },
   options
 );
