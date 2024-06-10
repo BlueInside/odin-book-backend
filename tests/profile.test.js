@@ -196,3 +196,68 @@ describe('POST /profile', () => {
     expect(response.status).toBe(401);
   });
 });
+
+describe('DELETE /profile/:profileId', () => {
+  const profileId = new mongoose.Types.ObjectId().toString();
+
+  const userDataPayload = {
+    id: profileId,
+    firstName: 'Karol',
+    role: 'admin',
+  };
+
+  const token = generateToken(userDataPayload);
+
+  it('Should delete profile successfully as admin', async () => {
+    Profile.findByIdAndDelete.mockImplementation(() => ({
+      id: profileId,
+      user: profileId,
+      birthday: '1997-05-18',
+      interests: ['cooking', 'fitness'],
+      hobby: ['football', 'web-development'],
+    }));
+
+    const response = await request(app)
+      .delete(`/profile/${profileId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Profile deleted');
+  });
+
+  it('Should return 403 if user is not admin', async () => {
+    const notAdminToken = generateToken({ id: profileId, role: 'user' });
+    const response = await request(app)
+      .delete(`/profile/${profileId}`)
+      .set('Authorization', `Bearer ${notAdminToken}`);
+
+    expect(response.status).toBe(403);
+    expect(response.body.message).toBe('Unauthorized action!');
+  });
+
+  it('Should return 404 if profile not found', async () => {
+    Profile.findByIdAndDelete.mockResolvedValue(null);
+
+    const response = await request(app)
+      .delete(`/profile/${profileId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe('Profile not found!');
+  });
+
+  it('Should return 400 if profileId is invalid', async () => {
+    const response = await request(app)
+      .delete('/profile/invalidProfileId')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).not.toBeNull();
+  });
+
+  it('Should return 401 if not authenticated', async () => {
+    const response = await request(app).delete(`/profile/${profileId}`);
+
+    expect(response.status).toBe(401);
+  });
+});
