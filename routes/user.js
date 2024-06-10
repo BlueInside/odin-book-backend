@@ -9,6 +9,7 @@ const {
   updateUserValidation,
   deleteUserValidation,
 } = require('../lib/userValidation');
+const { authenticateToken } = require('../config/jwt');
 
 router.get('/', getAllUsersValidation(), userController.getAllUsers);
 
@@ -26,10 +27,18 @@ router.get(
   userController.getUserLikes
 );
 
-router.post('/', userController.createUser);
+router.put(
+  '/:userId',
+  authenticateToken,
+  updateUserValidation(),
+  userController.updateUser
+);
 
-router.put('/:userId', updateUserValidation(), userController.updateUser);
-
-router.delete('/:userId', deleteUserValidation(), userController.deleteUser);
+router.delete(
+  '/:userId',
+  authenticateToken,
+  deleteUserValidation(),
+  userController.deleteUser
+);
 
 module.exports = router;
