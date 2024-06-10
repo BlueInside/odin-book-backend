@@ -9,10 +9,10 @@ const options = {
 
 const userSchema = new Schema(
   {
+    githubId: { type: String, required: true, unique: true }, // Ensure uniqueness
     firstName: { type: String, required: true, index: true },
-    lastName: { type: String, index: true },
-    password: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    lastName: { type: String, index: true, default: '' }, // Set default if empty
+    email: { type: String, unique: true, sparse: true }, // Make email sparse for uniqueness only when it is provided
     profilePicture: { type: String },
     bio: { type: String },
     isActive: { type: Boolean, default: true },
