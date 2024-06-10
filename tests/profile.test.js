@@ -38,5 +38,9 @@ describe('Get /profile', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.profile).not.toBeNull();
+    expect(response.body.profile.user).toBe(id);
+    expect(response.body.profile.birthday).toBe(mockProfile.birthday);
+    expect(response.body.profile.interests).toEqual(mockProfile.interests);
+    expect(response.body.profile.hobby).toEqual(mockProfile.hobby);
   });
 });
