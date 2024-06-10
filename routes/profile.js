@@ -3,7 +3,11 @@ const router = express.Router();
 const profilesController = require('../controllers/profilesController.js');
 const { authenticateToken } = require('../config/jwt.js');
 
-const { getProfileValidation } = require('../lib/profileValidation.js');
+const {
+  getProfileValidation,
+  updateProfileValidation,
+  createProfileValidation,
+} = require('../lib/profileValidation.js');
 
 router.get(
   '/:userId',
@@ -11,7 +15,21 @@ router.get(
   getProfileValidation(),
   profilesController.getProfile
 );
-router.put('/', authenticateToken, profilesController.updateProfile);
+
+router.post(
+  '/',
+  authenticateToken,
+  createProfileValidation(),
+  profilesController.createProfile
+);
+
+router.put(
+  '/:profileId',
+  authenticateToken,
+  updateProfileValidation(),
+  profilesController.updateProfile
+);
+
 router.delete('/', profilesController.deleteProfile);
 
 module.exports = router;
