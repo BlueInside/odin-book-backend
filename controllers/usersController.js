@@ -80,15 +80,11 @@ const updateUser = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
   const { firstName, lastName, profilePicture, bio } = req.body;
 
-  /*
-   Authenticate that the logged-in user matches the userId in params
-   DISABLED WHILE PASSPORT IS NOT SET UP!
-   if (req.session.userId !== userId) {
+  if (req.user.role !== 'admin' && req.user.id !== userId) {
     return res
-     .status(403)
+      .status(403)
       .json({ error: 'You do not have permission to update this profile.' });
-    }
-  */
+  }
 
   const updates = {
     firstName: firstName,
@@ -122,12 +118,11 @@ const deleteUser = asyncHandler(async (req, res, next) => {
   // Authenticated users only
   const { userId } = req.params;
 
-  /*
-  if (req.session.userId !== userId) {
+  if (req.user.role !== 'admin' && req.user.id !== userId) {
     return res
       .status(403)
       .json({ error: 'You do not have permission to delete this profile.' });
-  } */
+  }
 
   try {
     const user = await User.findById(userId);
