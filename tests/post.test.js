@@ -85,3 +85,66 @@ describe('GET /posts', () => {
     expect(response.status).toBe(401);
   });
 });
+
+// GET /posts/:postID
+
+describe('GET /posts/:postId', () => {
+  const userId = new mongoose.Types.ObjectId().toString();
+  const postId = new mongoose.Types.ObjectId().toString();
+
+  const userDataPayload = {
+    id: userId,
+    firstName: 'Karol',
+    role: 'admin',
+  };
+
+  const token = generateToken(userDataPayload);
+
+  it('Should get individual post successfully', async () => {
+    const post = {
+      _id: postId,
+      title: 'Test Post',
+      content: 'Content of the test post',
+      createdAt: new Date(),
+    };
+
+    Post.findById.mockResolvedValue(post);
+
+    const response = await request(app)
+      .get(`/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.post).not.toBeNull();
+    expect(response.body.post.title).toBe('Test Post');
+  });
+
+  it('Should return 404 if post not found', async () => {
+    Post.findById.mockResolvedValue(null);
+
+    const response = await request(app)
+      .get(`/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe('Post not found!');
+  });
+
+  it('Should return 400 if postId is invalid', async () => {
+    const response = await request(app)
+      .get('/posts/invalidPostId')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).not.toBeNull();
+    expect(response.body.errors[0].msg).toBe(
+      'Post ID must be a valid MongoDB ObjectId.'
+    );
+  });
+
+  it('Should return 401 if not authenticated', async () => {
+    const response = await request(app).get(`/posts/${postId}`);
+
+    expect(response.status).toBe(401);
+  });
+});
