@@ -18,7 +18,14 @@ const getAllPosts = asyncHandler(async (req, res, next) => {
 
 const getPost = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
-  res.status(200).send(`GET /posts/${postId} not implemented`);
+
+  const post = await Post.findById(postId);
+
+  if (!post) {
+    return res.status(404).json({ message: 'Post not found!' });
+  }
+
+  return res.status(200).json({ post });
 });
 
 const getPostLikes = asyncHandler(async (req, res, next) => {
