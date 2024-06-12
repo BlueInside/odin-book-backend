@@ -1,7 +1,19 @@
 const asyncHandler = require('express-async-handler');
+const Post = require('../models/post');
 
 const getAllPosts = asyncHandler(async (req, res, next) => {
-  res.status(200).send('GET /posts not implemented');
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const query = {};
+
+  const posts = await Post.find(query)
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit);
+
+  return res
+    .status(200)
+    .json({ posts: posts, page: page, pageSize: posts.length });
 });
 
 const getPost = asyncHandler(async (req, res, next) => {
