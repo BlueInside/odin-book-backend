@@ -12,9 +12,31 @@ const getMedia = asyncHandler(async (req, res, next) => {
   res.status(200).json({ media: media });
 });
 
-const createMedia = asyncHandler(async (req, res, next) => {
-  const mediaData = req.body;
-  res.status(204).send(`POST /media not implemented`);
+const uploadMedia = asyncHandler(async (req, res, next) => {
+  // Will have to use multer middleware to post data to cloud storage
+  // Then url from cloud storage will be used as url
+  // TODO ADD MULTER AUTHENTICATION TEST VALIDATION!!!
+  const { type, post } = req.body;
+  const mediaData = {
+    type,
+    post,
+    url: 'someUrl.com',
+    createdBy: req.user.id,
+  };
+
+  const media = new Media({
+    type: mediaData.type,
+    url: mediaData.url,
+    createdBy: mediaData.createdBy,
+    post: mediaData.post,
+  });
+
+  if (!media) {
+    res.status(400).json({ message: 'Error uploading media' });
+  }
+  return res
+    .status(204)
+    .send({ message: 'media uploaded successfully', media: Media });
 });
 
 const deleteMedia = asyncHandler(async (req, res, next) => {
@@ -24,6 +46,6 @@ const deleteMedia = asyncHandler(async (req, res, next) => {
 
 module.exports = {
   getMedia,
-  createMedia,
+  uploadMedia,
   deleteMedia,
 };
