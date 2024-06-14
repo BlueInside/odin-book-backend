@@ -41,7 +41,20 @@ const uploadMedia = asyncHandler(async (req, res, next) => {
 
 const deleteMedia = asyncHandler(async (req, res, next) => {
   const { mediaId } = req.params;
-  res.status(200).send(`DELETE /media/${mediaId} not implemented`);
+
+  const media = await Media.findById(mediaId);
+  if (!media) {
+    return res.status(404).send({ message: 'Media not found.' });
+  }
+
+  if (media.createdBy.toString() !== req.user.id) {
+    return res
+      .status(403)
+      .send({ message: 'Not authorized to delete this media.' });
+  }
+
+  await Media.findByIdAndDelete(mediaId);
+  res.status(200).send({ message: `Media ${mediaId} deleted successfully.` });
 });
 
 module.exports = {
