@@ -3,6 +3,7 @@ const request = require('supertest');
 const express = require('express');
 const Post = require('../models/post');
 const Like = require('../models/like');
+const Comment = require('../models/comment');
 const mongoose = require('mongoose');
 const app = express();
 const { generateToken } = require('../config/jwt');
@@ -10,6 +11,7 @@ const { generateToken } = require('../config/jwt');
 // Model mocks
 jest.mock('../models/post'); // Mock the Post model
 jest.mock('../models/like'); // Mock the Like model
+jest.mock('../models/comment'); // Mock the Comment model
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -205,6 +207,71 @@ describe('GET /posts/:postId/likes', () => {
 
   it('Should return 401 if not authenticated', async () => {
     const response = await request(app).get(`/posts/${postId}/likes`);
+
+    expect(response.status).toBe(401);
+  });
+});
+
+describe('GET /posts/:postId/comments', () => {
+  const userId = new mongoose.Types.ObjectId().toString();
+  const postId = new mongoose.Types.ObjectId().toString();
+
+  const userDataPayload = {
+    id: userId,
+    firstName: 'Karol',
+    role: 'admin',
+  };
+
+  const token = generateToken(userDataPayload);
+  it('Should get comments for a post successfully', async () => {
+    const comments = [
+      {
+        _id: new mongoose.Types.ObjectId().toString(),
+        text: 'First comment',
+        user: 'user1',
+      },
+      {
+        _id: new mongoose.Types.ObjectId().toString(),
+        text: 'Second comment',
+        user: 'user2',
+      },
+    ];
+
+    Comment.find.mockResolvedValue(comments);
+    const response = await request(app)
+      .get(`/posts/${postId}/comments`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.comments).toHaveLength(2);
+    expect(response.body.comments[0].text).toBe('First comment');
+  });
+
+  it('Should return 404 if no comments found for the post', async () => {
+    Comment.find.mockResolvedValue(undefined);
+
+    const response = await request(app)
+      .get(`/posts/${postId}/comments`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe('No comments found for this post!');
+  });
+
+  it('Should return 400 if postId is invalid', async () => {
+    const response = await request(app)
+      .get('/posts/invalidPostId/comments')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).not.toBeNull();
+    expect(response.body.errors[0].msg).toBe(
+      'Post ID must be a valid MongoDB ObjectId.'
+    );
+  });
+
+  it('Should return 401 if not authenticated', async () => {
+    const response = await request(app).get(`/posts/${postId}/comments`);
 
     expect(response.status).toBe(401);
   });
