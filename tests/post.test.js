@@ -276,3 +276,61 @@ describe('GET /posts/:postId/comments', () => {
     expect(response.status).toBe(401);
   });
 });
+
+describe('POST /posts', () => {
+  const userId = new mongoose.Types.ObjectId().toString();
+  const userDataPayload = {
+    id: userId,
+    firstName: 'Karol',
+    role: 'admin',
+  };
+
+  const token = generateToken(userDataPayload);
+  it('Should create a post successfully', async () => {
+    const postData = {
+      content: 'Test post content',
+    };
+
+    Post.prototype.save = jest.fn().mockResolvedValue({
+      _id: userId,
+      ...postData,
+      author: new mongoose.Types.ObjectId().toString(),
+      likesCount: 0,
+      comments: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await request(app)
+      .post('/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send(postData);
+
+    expect(response.status).toBe(201);
+    expect(response.body.post).not.toBeNull();
+    expect(response.body.post.content).toBe(postData.content);
+  });
+
+  it('Should return 400 if content is missing', async () => {
+    const postData = {};
+
+    const response = await request(app)
+      .post('/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send(postData);
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).not.toBeNull();
+    expect(response.body.errors[0].msg).toBe('Content is required.');
+  });
+
+  it('Should return 401 if not authenticated', async () => {
+    const postData = {
+      content: 'Test post content',
+    };
+
+    const response = await request(app).post('/posts').send(postData);
+
+    expect(response.status).toBe(401);
+  });
+});
