@@ -36,7 +36,7 @@ const uploadMedia = asyncHandler(async (req, res, next) => {
   }
   return res
     .status(204)
-    .send({ message: 'media uploaded successfully', media: Media });
+    .send({ message: 'media uploaded successfully', media: media });
 });
 
 const deleteMedia = asyncHandler(async (req, res, next) => {
