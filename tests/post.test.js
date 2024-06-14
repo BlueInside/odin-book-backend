@@ -2,12 +2,14 @@ const postRoute = require('../routes/post');
 const request = require('supertest');
 const express = require('express');
 const Post = require('../models/post');
+const Like = require('../models/like');
 const mongoose = require('mongoose');
 const app = express();
 const { generateToken } = require('../config/jwt');
 
 // Model mocks
 jest.mock('../models/post'); // Mock the Post model
+jest.mock('../models/like'); // Mock the Like model
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -144,6 +146,65 @@ describe('GET /posts/:postId', () => {
 
   it('Should return 401 if not authenticated', async () => {
     const response = await request(app).get(`/posts/${postId}`);
+
+    expect(response.status).toBe(401);
+  });
+});
+
+describe('GET /posts/:postId/likes', () => {
+  const userId = new mongoose.Types.ObjectId().toString();
+  const postId = new mongoose.Types.ObjectId().toString();
+
+  const userDataPayload = {
+    id: userId,
+    firstName: 'Karol',
+    role: 'admin',
+  };
+
+  const token = generateToken(userDataPayload);
+
+  const likes = [
+    { _id: new mongoose.Types.ObjectId().toString(), username: 'user1' },
+    { _id: new mongoose.Types.ObjectId().toString(), username: 'user2' },
+  ];
+  it('Should get likes for a post successfully', async () => {
+    Like.find.mockResolvedValue(likes);
+
+    const response = await request(app)
+      .get(`/posts/${postId}/likes`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.likes).toHaveLength(2);
+    expect(response.body.likes[0].username).toBe('user1');
+    expect(response.body.likesCount).toBe(2);
+  });
+
+  it('Should return 404 if no likes found for the post', async () => {
+    Like.find.mockResolvedValue(undefined);
+
+    const response = await request(app)
+      .get(`/posts/${postId}/likes`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe('No likes found for this post!');
+  });
+
+  it('Should return 400 if postId is invalid', async () => {
+    const response = await request(app)
+      .get('/posts/invalidPostId/likes')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).not.toBeNull();
+    expect(response.body.errors[0].msg).toBe(
+      'Post ID must be a valid MongoDB ObjectId.'
+    );
+  });
+
+  it('Should return 401 if not authenticated', async () => {
+    const response = await request(app).get(`/posts/${postId}/likes`);
 
     expect(response.status).toBe(401);
   });
