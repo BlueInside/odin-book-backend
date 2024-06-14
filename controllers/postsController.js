@@ -59,8 +59,17 @@ const getPostComments = asyncHandler(async (req, res, next) => {
 });
 
 const createPost = asyncHandler(async (req, res, next) => {
-  const postData = req.body;
-  res.status(201).send(`POST /posts not implemented`);
+  const { content } = req.body;
+  const author = req.user._id;
+
+  const newPost = new Post({
+    content,
+    author,
+  });
+
+  const savedPost = await newPost.save();
+
+  return res.status(201).json({ post: savedPost });
 });
 
 const updatePost = asyncHandler(async (req, res, next) => {
