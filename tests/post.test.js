@@ -440,3 +440,106 @@ describe('PUT /posts/:postId', () => {
     expect(response.status).toBe(401);
   });
 });
+
+describe('DELETE /posts/:postId', () => {
+  const postId = new mongoose.Types.ObjectId().toString();
+
+  const userId = new mongoose.Types.ObjectId().toString();
+
+  const userDataPayload = {
+    id: userId,
+    firstName: 'Karol',
+    role: 'admin',
+  };
+
+  const token = generateToken(userDataPayload);
+
+  it('Should delete a post successfully', async () => {
+    const post = {
+      _id: postId,
+      content: 'Original content',
+      author: userId,
+      remove: jest.fn(),
+    };
+
+    Post.findById.mockResolvedValue(post);
+
+    const response = await request(app)
+      .delete(`/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Post deleted');
+  });
+
+  it('Should return 404 if post not found', async () => {
+    Post.findById.mockResolvedValue(null);
+
+    const response = await request(app)
+      .delete(`/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe('Post not found!');
+  });
+
+  it('Should return 403 if user not authorized', async () => {
+    const notAdminUser = { ...userDataPayload, role: 'user' };
+
+    const post = {
+      _id: postId,
+      content: 'Original content',
+      author: 'inavlid author',
+      remove: jest.fn(),
+    };
+    const token = generateToken(notAdminUser);
+    Post.findById.mockResolvedValue(post);
+
+    const response = await request(app)
+      .delete(`/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(403);
+    expect(response.body.message).toBe(
+      'User not authorized to delete this post!'
+    );
+  });
+
+  it('Should allow admin to delete any post', async () => {
+    const mockRemove = jest.fn();
+    const post = {
+      _id: postId,
+      content: 'Original content',
+      author: 'some different user ID',
+      remove: mockRemove,
+    };
+
+    Post.findById.mockResolvedValue(post);
+
+    const response = await request(app)
+      .delete(`/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(mockRemove).toHaveBeenCalled();
+    expect(response.body.message).toBe('Post deleted');
+  });
+
+  it('Should return 400 if postId is invalid', async () => {
+    const response = await request(app)
+      .delete('/posts/invalidPostId')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).not.toBeNull();
+    expect(response.body.errors[0].msg).toBe(
+      'Post ID must be a valid MongoDB ObjectId.'
+    );
+  });
+
+  it('Should return 401 if not authenticated', async () => {
+    const response = await request(app).delete(`/posts/${postId}`);
+
+    expect(response.status).toBe(401);
+  });
+});
