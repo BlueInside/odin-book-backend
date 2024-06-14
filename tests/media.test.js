@@ -52,3 +52,59 @@ describe('GET /media/:mediaId', () => {
     expect(response.body.errors[0].msg).toBe('Invalid media ID format');
   });
 });
+
+describe('DELETE /media/:mediaId', () => {
+  const userId = new mongoose.Types.ObjectId().toString();
+  const mediaId = new mongoose.Types.ObjectId().toString();
+
+  const userDataPayload = {
+    id: userId,
+    firstName: 'Karol',
+    role: 'admin',
+  };
+
+  const token = generateToken(userDataPayload);
+
+  it('should delete media if valid ID and user is authorized', async () => {
+    const fakeMedia = { _id: mediaId, createdBy: userId };
+    Media.findById.mockResolvedValue(fakeMedia);
+    Media.findByIdAndDelete.mockResolvedValue(fakeMedia);
+
+    const response = await request(app)
+      .delete(`/media/${mediaId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toContain('deleted successfully');
+  });
+
+  it('should return 404 if media does not exist', async () => {
+    Media.findById.mockResolvedValue(null);
+
+    const response = await request(app)
+      .delete(`/media/${mediaId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+  });
+
+  it('should return 403 if user not authorized to delete the media', async () => {
+    const fakeMedia = { _id: '1', createdBy: 'user2' };
+    Media.findById.mockResolvedValue(fakeMedia);
+
+    const response = await request(app)
+      .delete(`/media/${mediaId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(403);
+  });
+
+  it('should return 400 if media ID is invalid', async () => {
+    const mediaId = 'invalidID';
+    const response = await request(app)
+      .delete(`/media/${mediaId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+  });
+});
