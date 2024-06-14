@@ -1,8 +1,15 @@
 const asyncHandler = require('express-async-handler');
+const Media = require('../models/media');
 
 const getMedia = asyncHandler(async (req, res, next) => {
   const { mediaId } = req.params;
-  res.status(200).send(`GET /media/${mediaId} not implemented`);
+
+  const media = await Media.findById(mediaId);
+
+  if (!media) {
+    return res.status(404).json({ message: 'Media not found!' });
+  }
+  res.status(200).json({ media: media });
 });
 
 const createMedia = asyncHandler(async (req, res, next) => {
