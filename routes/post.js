@@ -8,6 +8,7 @@ const {
   getPostCommentsValidation,
   createPostValidation,
   updatePostValidation,
+  deletePostValidation,
 } = require('../lib/postsValidation');
 const { authenticateToken } = require('../config/jwt');
 
@@ -51,6 +52,11 @@ router.put(
   updatePostValidation(),
   postsController.updatePost
 );
-router.delete('/:postId', postsController.deletePost);
+router.delete(
+  '/:postId',
+  authenticateToken,
+  deletePostValidation(),
+  postsController.deletePost
+);
 
 module.exports = router;
