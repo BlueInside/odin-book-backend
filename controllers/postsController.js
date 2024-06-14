@@ -74,7 +74,24 @@ const createPost = asyncHandler(async (req, res, next) => {
 
 const updatePost = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
-  res.status(200).send(`PUT /posts/${postId} not implemented`);
+  const { content } = req.body;
+
+  const post = await Post.findById(postId);
+
+  if (!post) {
+    return res.status(404).json({ message: `Post not found!` });
+  }
+
+  if (post.author.toString() !== req.user.id.toString()) {
+    return res
+      .status(403)
+      .json({ message: 'User not authorized to update this post!' });
+  }
+
+  post.content = content || post.content;
+  const updatedPost = await post.save();
+
+  return res.status(200).json({ post: updatedPost });
 });
 
 const deletePost = asyncHandler(async (req, res, next) => {
