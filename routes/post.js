@@ -4,6 +4,7 @@ const postsController = require('../controllers/postsController');
 const {
   getAllPostsValidation,
   getPostValidation,
+  getPostLikesValidation,
 } = require('../lib/postsValidation');
 const { authenticateToken } = require('../config/jwt');
 
@@ -21,7 +22,13 @@ router.get(
   postsController.getPost
 );
 
-router.get('/:postId/likes', postsController.getPostLikes);
+getPostLikesValidation(),
+  router.get(
+    '/:postId/likes',
+    authenticateToken,
+    getPostLikesValidation(),
+    postsController.getPostLikes
+  );
 router.get('/:postId/comments', postsController.getPostComments);
 router.post('/', postsController.createPost);
 router.put('/', postsController.updatePost);
