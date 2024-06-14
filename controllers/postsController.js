@@ -96,7 +96,25 @@ const updatePost = asyncHandler(async (req, res, next) => {
 
 const deletePost = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
-  res.status(204).send(`DELETE /posts/${postId} not implemented`);
+
+  const post = await Post.findById(postId);
+
+  if (!post) {
+    return res.status(404).json({ message: 'Post not found!' });
+  }
+
+  if (
+    post.author.toString() !== req.user.id.toString() &&
+    req.user.role !== 'admin'
+  ) {
+    return res
+      .status(403)
+      .json({ message: 'User not authorized to delete this post!' });
+  }
+
+  await post.remove();
+
+  return res.status(200).json({ message: 'Post deleted' });
 });
 
 module.exports = {
