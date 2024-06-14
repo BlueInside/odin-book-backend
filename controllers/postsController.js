@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Post = require('../models/post');
+const Like = require('../models/like');
 
 const getAllPosts = asyncHandler(async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
@@ -30,11 +31,20 @@ const getPost = asyncHandler(async (req, res, next) => {
 
 const getPostLikes = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
-  res.status(200).send(`GET /posts/${postId}/likes not implemented`);
+
+  const likes = await Like.find({ post: postId });
+
+  if (!likes) {
+    return res.status(404).json({ message: 'No likes found for this post!' });
+  }
+
+  return res.status(200).json({ likesCount: likes.length, likes: likes });
 });
 
 const getPostComments = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
+
+  const likes = Like;
   res.status(200).send(`GET /posts/${postId}/comments not implemented`);
 });
 
