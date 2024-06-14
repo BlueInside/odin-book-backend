@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const mediaController = require('../controllers/mediaController');
+const { validateMediaId } = require('../lib/mediaValidation');
 
-router.get('/:mediaId', mediaController.getMedia);
+router.get('/:mediaId', validateMediaId(), mediaController.getMedia);
 router.post('/', mediaController.createMedia);
 router.delete('/:mediaId', mediaController.deleteMedia);
 
