@@ -334,3 +334,109 @@ describe('POST /posts', () => {
     expect(response.status).toBe(401);
   });
 });
+
+describe('PUT /posts/:postId', () => {
+  const userId = new mongoose.Types.ObjectId().toString();
+
+  const userDataPayload = {
+    id: userId,
+    firstName: 'Karol',
+    role: 'admin',
+  };
+
+  const token = generateToken(userDataPayload);
+  const postId = new mongoose.Types.ObjectId().toString();
+
+  it('Should update a post successfully', async () => {
+    const post = {
+      _id: postId,
+      content: 'Original content',
+      userId,
+      author: userId,
+      save: () => ({ content: 'Updated content' }),
+    };
+
+    Post.findById.mockResolvedValue(post);
+
+    const response = await request(app)
+      .put(`/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Updated content' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.post).not.toBeNull();
+    expect(response.body.post.content).toBe('Updated content');
+  });
+
+  it('Should return 404 if post not found', async () => {
+    Post.findById.mockResolvedValue(null);
+
+    const response = await request(app)
+      .put(`/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Updated content' });
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe('Post not found!');
+  });
+
+  it('Should return 403 if user not authorized', async () => {
+    const post = {
+      _id: postId,
+      content: 'Original content',
+      author: 'differentUserId',
+    };
+
+    Post.findById.mockResolvedValue(post);
+
+    const response = await request(app)
+      .put(`/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Updated content' });
+
+    expect(response.status).toBe(403);
+    expect(response.body.message).toBe(
+      'User not authorized to update this post!'
+    );
+  });
+
+  it('Should return 400 if postId is invalid', async () => {
+    const response = await request(app)
+      .put('/posts/invalidPostId')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Updated content' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).not.toBeNull();
+    expect(response.body.errors[0].msg).toBe(
+      'Post ID must be a valid MongoDB ObjectId.'
+    );
+  });
+
+  it('Should return 400 if content is invalid', async () => {
+    const post = {
+      _id: postId,
+      content: 'Original content',
+      author: userId,
+    };
+
+    Post.findById.mockResolvedValue(post);
+
+    const response = await request(app)
+      .put(`/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 123 });
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors).not.toBeNull();
+    expect(response.body.errors[0].msg).toBe('Content must be a string.');
+  });
+
+  it('Should return 401 if not authenticated', async () => {
+    const response = await request(app)
+      .put(`/posts/${postId}`)
+      .send({ content: 'Updated content' });
+
+    expect(response.status).toBe(401);
+  });
+});
