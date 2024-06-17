@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const likesController = require('../controllers/likesController');
 const { authenticateToken } = require('../config/jwt');
-const { createLikeValidation } = require('../lib/likeValidation');
+const {
+  createLikeValidation,
+  deleteLikeValidation,
+} = require('../lib/likeValidation');
 
 router.post(
   '/',
@@ -11,6 +14,11 @@ router.post(
   likesController.createLike
 );
 
-router.delete('/', likesController.deleteLike);
+router.delete(
+  '/',
+  authenticateToken,
+  deleteLikeValidation(),
+  likesController.deleteLike
+);
 
 module.exports = router;
