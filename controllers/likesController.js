@@ -14,7 +14,7 @@ const createLike = asyncHandler(async (req, res, next) => {
   if (existingLike) {
     return res
       .status(400)
-      .json({ message: 'You have already liked this post' });
+      .json({ message: 'You have already liked this post.' });
   }
 
   const like = new Like({ post: postId, user: userId });
@@ -22,11 +22,27 @@ const createLike = asyncHandler(async (req, res, next) => {
 
   await post.incrementLikes();
 
-  res.status(201).json({ message: 'Like created successfully' });
+  res.status(201).json({ message: 'Like created successfully.' });
 });
 
 const deleteLike = asyncHandler(async (req, res, next) => {
-  res.status(204).send(`DELETE /likes/ not implemented`);
+  const { postId, userId } = req.body;
+
+  // Check if the like exists
+  const existingLike = await Like.findOne({ post: postId, user: userId });
+
+  if (!existingLike) {
+    return res.status(404).json({ message: 'Like not found.' });
+  }
+
+  await Like.deleteOne({ post: postId, user: userId });
+
+  const post = await Post.findById(postId);
+  if (post) {
+    await post.decrementLikes();
+  }
+
+  return res.status(200).json({ message: 'Like deleted successfully.' });
 });
 
 module.exports = {
