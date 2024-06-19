@@ -22,7 +22,24 @@ const getFollowing = asyncHandler(async (req, res, next) => {
   // Get user id from validation,
   const id = req.user.id;
 
-  res.status(200).json({ message: `Get for /following is not implemented` });
+  try {
+    const followed = await Follow.find({ follower: id }).populate(
+      'followed',
+      'firstName profilePicture -githubId -_id'
+    );
+
+    if (!followed.length) {
+      return res
+        .status(404)
+        .json({ message: 'You are not following anyone at the moment.' });
+    }
+
+    res.status(200).json({ followed: followed });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: 'Error during fetching followed users' });
+  }
 });
 
 module.exports = { getFollowers, getFollowing };
