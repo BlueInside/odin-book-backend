@@ -12,7 +12,9 @@ const getFollowers = asyncHandler(async (req, res, next) => {
       return res.status(404).json({ message: 'No followers found.' }); // More accurate message if no followers are found
     }
 
-    res.status(200).json({ followers: followers });
+    res
+      .status(200)
+      .json({ followers: followers, followersCount: followers.length });
   } catch (err) {
     return res.status(500).json({ message: 'Error during fetching followers' });
   }
@@ -34,7 +36,7 @@ const getFollowing = asyncHandler(async (req, res, next) => {
         .json({ message: 'You are not following anyone at the moment.' });
     }
 
-    res.status(200).json({ followed: followed });
+    res.status(200).json({ followed: followed, followedCount: followed.count });
   } catch (err) {
     return res
       .status(500)
