@@ -99,7 +99,7 @@ describe('GET /following', () => {
   };
 
   const token = generateToken(userDataPayload);
-  it('should find users that the authenticated user is following', async () => {
+  it('Should find users that the authenticated user is following', async () => {
     const followingMock = [
       {
         followed: {
@@ -128,7 +128,7 @@ describe('GET /following', () => {
     expect(response.body.followed.length).toBe(2);
   });
 
-  it('should return 404 when the user is not following anyone', async () => {
+  it('Should return 404 when the user is not following anyone', async () => {
     Follow.find.mockImplementation(() => ({
       populate: () => [],
     }));
@@ -143,7 +143,7 @@ describe('GET /following', () => {
     );
   });
 
-  it('should handle errors during fetching followed users', async () => {
+  it('Should handle errors during fetching followed users', async () => {
     Follow.find.mockImplementation(() => {
       throw new Error('Database error');
     });
@@ -154,5 +154,61 @@ describe('GET /following', () => {
 
     expect(response.status).toBe(500);
     expect(response.body.message).toBe('Error during fetching followed users');
+  });
+});
+
+describe('GET /unfollow', () => {
+  const userId = new mongoose.Types.ObjectId().toString();
+  const userTwoId = new mongoose.Types.ObjectId().toString();
+  const userDataPayload = {
+    id: userId,
+    firstName: 'Karol',
+    role: 'admin',
+  };
+
+  const token = generateToken(userDataPayload);
+
+  it('Should unfollow a user successfully', async () => {
+    Follow.findOneAndDelete.mockResolvedValue({
+      _id: 'some-id',
+      follower: userId,
+      followed: userTwoId,
+    });
+
+    const response = await request(app)
+      .delete('/unfollow')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ followedId: userTwoId });
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Un followed successfully.');
+    expect(Follow.findOneAndDelete).toHaveBeenCalledWith({
+      follower: userId,
+      followed: userTwoId,
+    });
+  });
+
+  it('should return 404 if the follow relationship does not exist', async () => {
+    Follow.findOneAndDelete.mockResolvedValue(null);
+
+    const response = await request(app)
+      .delete('/unfollow')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ followedId: userTwoId });
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe('Follow relationship not found.');
+  });
+
+  it('should return 400 if the followedId is not provided or invalid', async () => {
+    const response = await request(app)
+      .delete('/unfollow')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ followedId: '' }); // Testing with empty followedId
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors[0].msg).toContain(
+      "Followed id can't be empty."
+    );
   });
 });
