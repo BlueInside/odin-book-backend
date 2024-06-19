@@ -44,4 +44,20 @@ const getFollowing = asyncHandler(async (req, res, next) => {
   }
 });
 
-module.exports = { getFollowers, getFollowing };
+const unfollow = asyncHandler(async (req, res, next) => {
+  const followerId = req.user.id;
+  // Validate followedId
+  const { followedId } = req.body;
+
+  const follow = await Follow.findOneAndDelete({
+    follower: followerId,
+    followed: followedId,
+  });
+
+  if (!follow) {
+    return res.status(404).json({ message: 'Follow relationship not found.' });
+  }
+
+  res.status(200).json({ message: 'Un followed successfully.' });
+});
+module.exports = { getFollowers, getFollowing, unfollow };
