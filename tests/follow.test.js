@@ -89,3 +89,70 @@ describe('GET /followers', () => {
     );
   });
 });
+
+describe('GET /following', () => {
+  const userId = new mongoose.Types.ObjectId().toString();
+  const userDataPayload = {
+    id: userId,
+    firstName: 'Karol',
+    role: 'admin',
+  };
+
+  const token = generateToken(userDataPayload);
+  it('should find users that the authenticated user is following', async () => {
+    const followingMock = [
+      {
+        followed: {
+          firstName: 'John',
+          profilePicture: 'john_profile.jpg',
+        },
+      },
+      {
+        followed: {
+          firstName: 'Jane',
+          profilePicture: 'jane_profile.jpg',
+        },
+      },
+    ];
+
+    Follow.find.mockImplementation(() => ({
+      populate: () => followingMock,
+    }));
+
+    const response = await request(app)
+      .get('/following')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.followed).toEqual(followingMock);
+    expect(response.body.followed.length).toBe(2);
+  });
+
+  it('should return 404 when the user is not following anyone', async () => {
+    Follow.find.mockImplementation(() => ({
+      populate: () => [],
+    }));
+
+    const response = await request(app)
+      .get('/following')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
+    expect(response.body.message).toBe(
+      'You are not following anyone at the moment.'
+    );
+  });
+
+  it('should handle errors during fetching followed users', async () => {
+    Follow.find.mockImplementation(() => {
+      throw new Error('Database error');
+    });
+
+    const response = await request(app)
+      .get('/following')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(500);
+    expect(response.body.message).toBe('Error during fetching followed users');
+  });
+});
