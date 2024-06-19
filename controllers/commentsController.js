@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Comment = require('../models/comment');
+const Post = require('../models/post');
 
 const createComment = asyncHandler(async (req, res, next) => {
   const authorId = req.user.id;
@@ -20,7 +21,28 @@ const createComment = asyncHandler(async (req, res, next) => {
 });
 
 const deleteComment = asyncHandler(async (req, res, next) => {
-  res.status(204).send(`DELETE /comments/ not implemented`);
+  const userId = req.user.id;
+  const { postId, commentId } = req.body;
+
+  const existingComment = await Comment.findById(commentId);
+
+  if (!existingComment) {
+    return res.status(404).json({ message: 'Comment not found.' });
+  }
+
+  if (
+    existingComment.author.toString() !== userId &&
+    req.user.role !== 'admin'
+  ) {
+    return res
+      .status(403)
+      .json({ message: 'Not authorized to delete this comment.' });
+  }
+
+  await Comment.findByIdAndDelete(commentId);
+  await Post.findByIdAndUpdate(postId, { $pull: { comments: commentId } });
+
+  res.status(200).json({ message: 'Comment deleted successfully.' });
 });
 
 module.exports = {
