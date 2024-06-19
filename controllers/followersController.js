@@ -60,4 +60,38 @@ const unfollow = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({ message: 'Un followed successfully.' });
 });
-module.exports = { getFollowers, getFollowing, unfollow };
+
+const follow = asyncHandler(async (req, res, next) => {
+  const followerId = req.user.id;
+  const { followedId } = req.body;
+
+  if (followerId === followedId) {
+    return res.status(400).json({ message: 'You cannot follow yourself.' });
+  }
+
+  const existingFollow = await Follow.findOne({
+    follower: followerId,
+    followed: followedId,
+  });
+  if (existingFollow) {
+    return res
+      .status(400)
+      .json({ message: 'You are already following this user.' });
+  }
+  try {
+    const follow = new Follow({
+      follower: followerId,
+      followed: followedId,
+    });
+
+    await follow.save();
+    res.status(201).json({ message: 'Successfully followed user.' });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Failed to follow user due to an error.',
+      error: error.message,
+    });
+  }
+});
+
+module.exports = { getFollowers, getFollowing, unfollow, follow };
