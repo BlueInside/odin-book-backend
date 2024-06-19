@@ -2,12 +2,14 @@ const commentRoute = require('../routes/comment');
 const request = require('supertest');
 const express = require('express');
 const Comment = require('../models/comment');
+const Post = require('../models/post');
 const mongoose = require('mongoose');
 const app = express();
 const { generateToken } = require('../config/jwt');
 
 // Mocks
-jest.mock('../models/comment'); // Mock the Post model
+jest.mock('../models/comment'); // Mock the Comment model
+jest.mock('../models/post'); // Mock the Post model
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -74,5 +76,62 @@ describe('POST /comments', () => {
 
     expect(response.status).toBe(500);
     expect(response.body.message).toBe('Failed to add comment.');
+  });
+});
+
+describe('DELETE /comments', () => {
+  const userId = new mongoose.Types.ObjectId().toString();
+  const postId = new mongoose.Types.ObjectId().toString();
+  const commentId = new mongoose.Types.ObjectId().toString();
+
+  const userDataPayload = {
+    id: userId,
+    firstName: 'Karol',
+    role: 'admin',
+  };
+
+  const token = generateToken(userDataPayload);
+  const commentData = {
+    _id: commentId,
+    author: userId,
+    content: 'This is a test comment.',
+    post: postId,
+  };
+
+  it('should allow the author or an admin to delete a comment', async () => {
+    Comment.findById.mockResolvedValue(commentData);
+    Comment.findByIdAndDelete.mockResolvedValue(commentData);
+    Post.findByIdAndUpdate.mockResolvedValue({});
+
+    const response = await request(app)
+      .delete('/comments')
+      .send({ postId, commentId })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe('Comment deleted successfully.');
+  });
+
+  it('should prevent non-author, non-admin users from deleting a comment', async () => {
+    // 'userId' is neither the author nor an admin.
+    const userDataPayload = {
+      id: 'invalidId',
+      firstName: 'Karol',
+      role: 'user',
+    };
+    const token = generateToken(userDataPayload);
+
+    const commentData = { _id: commentId, author: 'anotherUserId' };
+    Comment.findById.mockResolvedValue(commentData);
+
+    const response = await request(app)
+      .delete('/comments')
+      .send({ postId: postId, commentId: commentId })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(403);
+    expect(response.body.message).toBe(
+      'Not authorized to delete this comment.'
+    );
   });
 });
