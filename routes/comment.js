@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const commentsController = require('../controllers/commentsController');
 const { authenticateToken } = require('../config/jwt');
-const { createCommentValidation } = require('../lib/commentValidation');
+const {
+  createCommentValidation,
+  deleteCommentValidation,
+} = require('../lib/commentValidation');
 
 router.post(
   '/comments',
@@ -10,6 +13,11 @@ router.post(
   createCommentValidation(),
   commentsController.createComment
 );
-router.delete('/comments', commentsController.deleteComment);
+router.delete(
+  '/comments',
+  authenticateToken,
+  deleteCommentValidation(),
+  commentsController.deleteComment
+);
 
 module.exports = router;
