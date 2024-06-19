@@ -5,6 +5,6 @@ const { authenticateToken } = require('../config/jwt');
 const followersController = require('../controllers/followersController');
 
 router.get('/followers', authenticateToken, followersController.getFollowers);
-router.get('/following', followersController.getFollowing);
+router.get('/following', authenticateToken, followersController.getFollowing);
 
 module.exports = router;
