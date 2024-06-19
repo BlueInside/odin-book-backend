@@ -5,7 +5,6 @@ const Follow = require('../models/follow');
 const mongoose = require('mongoose');
 const app = express();
 const { generateToken } = require('../config/jwt');
-const { describe } = require('@jest/globals');
 
 // Mocks
 jest.mock('../models/follow'); // Mock the Post model
