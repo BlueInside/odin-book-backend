@@ -5,6 +5,7 @@ const Follow = require('../models/follow');
 const mongoose = require('mongoose');
 const app = express();
 const { generateToken } = require('../config/jwt');
+const { describe } = require('@jest/globals');
 
 // Mocks
 jest.mock('../models/follow'); // Mock the Post model
@@ -207,6 +208,68 @@ describe('GET /unfollow', () => {
       .send({ followedId: '' }); // Testing with empty followedId
 
     expect(response.status).toBe(400);
+    expect(response.body.errors[0].msg).toContain(
+      "Followed id can't be empty."
+    );
+  });
+});
+
+describe('POST /follow', () => {
+  const userId = new mongoose.Types.ObjectId().toString();
+  const followedId = new mongoose.Types.ObjectId().toString();
+
+  const userDataPayload = {
+    id: userId,
+    firstName: 'Karol',
+    role: 'admin',
+  };
+  const token = generateToken(userDataPayload);
+
+  it('should allow a user to follow another user successfully', async () => {
+    Follow.findOne.mockResolvedValue(null);
+    Follow.prototype.save.mockResolvedValue({});
+
+    const response = await request(app)
+      .post('/follow')
+      .send({ followedId })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(201);
+    expect(response.body.message).toBe('Successfully followed user.');
+  });
+
+  it('should not allow a user to follow themselves', async () => {
+    const response = await request(app)
+      .post('/follow')
+      .send({ followedId: userId })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('You cannot follow yourself.');
+  });
+
+  it('should not allow duplicate follows', async () => {
+    Follow.findOne.mockResolvedValue(true); // Simulate an existing follow relationship
+
+    const response = await request(app)
+      .post('/follow')
+      .send({ followedId })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('You are already following this user.');
+  });
+
+  it('should validate followedId as a non-empty valid mongo id', async () => {
+    const response = await request(app)
+      .post('/follow')
+      .send({ followedId: '' })
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors[0].msg).toContain(
+      "Followed id can't be empty."
+    );
     expect(response.body.errors[0].msg).toContain(
       "Followed id can't be empty."
     );
