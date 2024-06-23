@@ -4,7 +4,7 @@ const Like = require('../models/like');
 const Comment = require('../models/comment');
 const Follow = require('../models/follow');
 
-const getAllPosts = asyncHandler(async (req, res, next) => {
+const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const userId = req.user.id;
@@ -139,7 +139,7 @@ const deletePost = asyncHandler(async (req, res, next) => {
 });
 
 module.exports = {
-  getAllPosts,
+  getPersonalizedPosts,
   getPost,
   getPostLikes,
   getPostComments,

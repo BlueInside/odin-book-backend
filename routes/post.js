@@ -16,7 +16,7 @@ router.get(
   '/',
   authenticateToken,
   getAllPostsValidation(),
-  postsController.getAllPosts
+  postsController.getPersonalizedPosts
 );
 
 router.get(
