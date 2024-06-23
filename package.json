@@ -6,7 +6,7 @@
     "start": "node ./bin/www",
     "server": "nodemon ./bin/www",
     "serverStart": "DEBUG=odin-book-backend:* nodemon ./bin/www",
-    "test": "jest"
+    "test": "jest --watch"
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",
