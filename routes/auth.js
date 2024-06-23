@@ -3,7 +3,7 @@ const router = express.Router();
 const authenticationController = require('../controllers/authenticationController');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
-const { generateToken } = require('../config/jwt');
+const { generateToken, authenticateToken } = require('../config/jwt');
 
 router.get(
   '/github',
@@ -27,6 +27,6 @@ router.get(
   }
 );
 
-router.post('/register', authenticationController.register);
+router.get('/verify', authenticateToken, authenticationController.verify);
 
 module.exports = router;
