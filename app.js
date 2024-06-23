@@ -4,6 +4,8 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const passport = require('passport');
+const rateLimit = require('express-rate-limit');
+
 // Import passport configuration
 require('./config/passport');
 
@@ -14,6 +16,14 @@ const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/user');
 
 const app = express();
+
+// Rate limiter settings
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Routes
 const userRoutes = require('./routes/user');
@@ -29,6 +39,7 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(passport.initialize());
+app.use(limiter);
 
 app.use(cookieParser());
 
