@@ -2,20 +2,41 @@ const asyncHandler = require('express-async-handler');
 const Post = require('../models/post');
 const Like = require('../models/like');
 const Comment = require('../models/comment');
+const Follow = require('../models/follow');
 
 const getAllPosts = asyncHandler(async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
-  const query = {};
+  const userId = req.user.id;
 
-  const posts = await Post.find(query)
+  const follows = await Follow.find({ follower: userId }, 'followed');
+  const followedIds = follows.map((follow) => follow.followed);
+
+  const allRelevantUserIds = [userId, ...followedIds];
+
+  let posts = await Post.find({
+    author: { $in: allRelevantUserIds },
+  })
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit);
 
-  return res
-    .status(200)
-    .json({ posts: posts, page: page, pageSize: posts.length });
+  if (posts.length < limit) {
+    const extraPostsNeeded = limit - posts.length;
+    const randomPosts = await Post.find({
+      author: { $nin: allRelevantUserIds },
+    })
+      .sort({ createdAt: -1 })
+      .limit(extraPostsNeeded);
+
+    posts = [...posts, ...randomPosts];
+  }
+
+  return res.status(200).json({
+    posts: posts,
+    page: page,
+    pageSize: posts.length,
+  });
 });
 
 const getPost = asyncHandler(async (req, res, next) => {
