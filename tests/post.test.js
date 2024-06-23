@@ -4,6 +4,7 @@ const express = require('express');
 const Post = require('../models/post');
 const Like = require('../models/like');
 const Comment = require('../models/comment');
+const Follow = require('../models/follow');
 const mongoose = require('mongoose');
 const app = express();
 const { generateToken } = require('../config/jwt');
@@ -12,6 +13,7 @@ const { generateToken } = require('../config/jwt');
 jest.mock('../models/post'); // Mock the Post model
 jest.mock('../models/like'); // Mock the Like model
 jest.mock('../models/comment'); // Mock the Comment model
+jest.mock('../models/follow'); // Mock the Comment model
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -43,17 +45,43 @@ describe('GET /posts', () => {
         createdAt: new Date(),
       },
     ];
+    const extraPostsMock = [
+      {
+        _id: new mongoose.Types.ObjectId().toString(),
+        title: 'Third Post',
+        content: 'Content of the third post',
+        createdAt: new Date(),
+      },
+      {
+        _id: new mongoose.Types.ObjectId().toString(),
+        title: 'Forth Post',
+        content: 'Content of the forth post',
+        createdAt: new Date(),
+      },
+    ];
+    const follows = [
+      { id: '1', followed: new mongoose.Types.ObjectId().toString() },
+      { id: '2', followed: new mongoose.Types.ObjectId().toString() },
+      { id: '3', followed: new mongoose.Types.ObjectId().toString() },
+    ];
 
-    Post.find.mockImplementation(() => ({
-      sort: () => ({ skip: () => ({ limit: () => posts }) }),
-    }));
+    Follow.find.mockResolvedValue(follows);
+
+    Post.find = jest
+      .fn()
+      .mockImplementationOnce(() => ({
+        sort: () => ({ skip: () => ({ limit: () => posts }) }),
+      }))
+      .mockImplementationOnce(() => ({
+        sort: () => ({ limit: () => extraPostsMock }),
+      }));
 
     const response = await request(app)
       .get('/posts')
       .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
-    expect(response.body.posts).toHaveLength(2);
+    expect(response.body.posts).toHaveLength(4);
     expect(response.body.posts[0].title).toBe('First Post');
   });
 
