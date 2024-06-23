@@ -23,6 +23,11 @@ const limiter = rateLimit({
   limit: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      message: 'Too many requests, please try again later.',
+    });
+  },
 });
 
 // Routes
@@ -40,9 +45,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(passport.initialize());
 app.use(limiter);
-
 app.use(cookieParser());
-
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
