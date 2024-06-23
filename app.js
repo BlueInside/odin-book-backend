@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const passport = require('passport');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 // Import passport configuration
 require('./config/passport');
@@ -40,6 +41,7 @@ const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const mediaRoutes = require('./routes/media');
 
+app.use(helmet());
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
