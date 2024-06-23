@@ -6,6 +6,7 @@ const logger = require('morgan');
 const passport = require('passport');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const cors = require('cors');
 
 // Import passport configuration
 require('./config/passport');
@@ -31,6 +32,11 @@ const limiter = rateLimit({
   },
 });
 
+// CORS settings
+const corsOptions = {
+  origin: '',
+  optionsSuccessStatus: 200,
+};
 // Routes
 const userRoutes = require('./routes/user');
 const postRoutes = require('./routes/post');
