@@ -30,7 +30,7 @@ describe('GET /posts', () => {
 
   const token = generateToken(userDataPayload);
 
-  it('Should get all posts successfully', async () => {
+  it('Should get all user relevant posts successfully', async () => {
     const posts = [
       {
         _id: new mongoose.Types.ObjectId().toString(),
