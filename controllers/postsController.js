@@ -3,6 +3,7 @@ const Post = require('../models/post');
 const Like = require('../models/like');
 const Comment = require('../models/comment');
 const Follow = require('../models/follow');
+const like = require('../models/like');
 
 const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
@@ -11,7 +12,6 @@ const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
 
   const follows = await Follow.find({ follower: userId }, 'followed');
   const followedIds = follows.map((follow) => follow.followed);
-
   const allRelevantUserIds = [userId, ...followedIds];
 
   let posts = await Post.find({
@@ -21,7 +21,6 @@ const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit);
-
   if (posts.length < limit) {
     const extraPostsNeeded = limit - posts.length;
     const randomPosts = await Post.find({
@@ -30,12 +29,19 @@ const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
       .populate('author', 'profilePicture firstName')
       .sort({ createdAt: -1 })
       .limit(extraPostsNeeded);
-
     posts = [...posts, ...randomPosts];
   }
 
+  const likedPostsIds = await Like.find({ user: userId }).select('post');
+  const likedPostsSet = new Set(likedPostsIds.map((lp) => lp.post.toString()));
+
+  const postsWithLikes = posts.map((post) => ({
+    ...post.toObject(),
+    likedByUser: likedPostsSet.has(post._id.toString()),
+  }));
+
   return res.status(200).json({
-    posts: posts,
+    posts: postsWithLikes,
     page: page,
     pageSize: posts.length,
   });
@@ -147,11 +153,16 @@ const deletePost = asyncHandler(async (req, res, next) => {
       .json({ message: 'User not authorized to delete this post!' });
   }
 
+  const deletedComments = await Comment.deleteMany({ post: postId });
+  const deletedLikes = await like.deleteMany({ post: postId });
   const deletedPost = await Post.findByIdAndDelete(postId);
 
-  return res
-    .status(200)
-    .json({ message: 'Post deleted', deletedPost: deletedPost });
+  return res.status(200).json({
+    message: 'Post deleted',
+    deletedPost: deletedPost,
+    deletedComments: deletedComments.deletedCount,
+    deletedLikes: deletedLikes.deletedCount,
+  });
 });
 
 module.exports = {
