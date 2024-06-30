@@ -17,6 +17,7 @@ const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
   let posts = await Post.find({
     author: { $in: allRelevantUserIds },
   })
+    .populate('author', 'profilePicture firstName')
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit);
@@ -26,6 +27,7 @@ const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
     const randomPosts = await Post.find({
       author: { $nin: allRelevantUserIds },
     })
+      .populate('author', 'profilePicture firstName')
       .sort({ createdAt: -1 })
       .limit(extraPostsNeeded);
 
@@ -42,13 +44,22 @@ const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
 const getPost = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
 
-  const post = await Post.findById(postId);
-
+  const post = await Post.findById(postId).populate(
+    'author',
+    'firstName profilePicture'
+  );
   if (!post) {
     return res.status(404).json({ message: 'Post not found!' });
   }
 
-  return res.status(200).json({ post });
+  const comments = await Comment.find({ post: postId }).populate(
+    'author',
+    'firstName'
+  );
+  if (!comments) {
+    return res.status(404).json({ message: 'Comments not found!' });
+  }
+  return res.status(200).json({ post, comments });
 });
 
 const getPostLikes = asyncHandler(async (req, res, next) => {
@@ -66,7 +77,10 @@ const getPostLikes = asyncHandler(async (req, res, next) => {
 const getPostComments = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
 
-  const comments = await Comment.find({ post: postId });
+  const comments = await Comment.find({ post: postId }).populate(
+    'author',
+    'firstName'
+  );
 
   if (!comments) {
     return res
@@ -81,7 +95,7 @@ const getPostComments = asyncHandler(async (req, res, next) => {
 
 const createPost = asyncHandler(async (req, res, next) => {
   const { content } = req.body;
-  const author = req.user._id;
+  const author = req.user.id;
 
   const newPost = new Post({
     content,
@@ -133,9 +147,11 @@ const deletePost = asyncHandler(async (req, res, next) => {
       .json({ message: 'User not authorized to delete this post!' });
   }
 
-  await post.remove();
+  const deletedPost = await Post.findByIdAndDelete(postId);
 
-  return res.status(200).json({ message: 'Post deleted' });
+  return res
+    .status(200)
+    .json({ message: 'Post deleted', deletedPost: deletedPost });
 });
 
 module.exports = {
