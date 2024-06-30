@@ -3,7 +3,8 @@ const Like = require('../models/like');
 const Post = require('../models/post');
 
 const createLike = asyncHandler(async (req, res, next) => {
-  const { postId, userId } = req.body;
+  const userId = req.user.id;
+  const { postId } = req.body;
 
   const post = await Post.findById(postId);
   if (!post) {
@@ -26,7 +27,8 @@ const createLike = asyncHandler(async (req, res, next) => {
 });
 
 const deleteLike = asyncHandler(async (req, res, next) => {
-  const { postId, userId } = req.body;
+  const userId = req.user.id;
+  const { postId } = req.body;
 
   // Check if the like exists
   const existingLike = await Like.findOne({ post: postId, user: userId });
