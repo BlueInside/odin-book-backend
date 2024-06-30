@@ -8,6 +8,7 @@ const Follow = require('../models/follow');
 const mongoose = require('mongoose');
 const app = express();
 const { generateToken } = require('../config/jwt');
+const like = require('../models/like');
 
 // Model mocks
 jest.mock('../models/post'); // Mock the Post model
@@ -21,7 +22,8 @@ app.use('/posts', postRoute);
 
 describe('GET /posts', () => {
   const id = new mongoose.Types.ObjectId().toString();
-
+  const likedPostId1 = new mongoose.Types.ObjectId().toString();
+  const likedPostId2 = new mongoose.Types.ObjectId().toString();
   const userDataPayload = {
     id: id,
     firstName: 'Karol',
@@ -30,19 +32,23 @@ describe('GET /posts', () => {
 
   const token = generateToken(userDataPayload);
 
-  it('Should get all user relevant posts successfully', async () => {
+  it('Should get all user relevant posts successfully and mark liked posts', async () => {
     const posts = [
       {
-        _id: new mongoose.Types.ObjectId().toString(),
+        _id: likedPostId1,
         title: 'First Post',
         content: 'Content of the first post',
         createdAt: new Date(),
+        likes: [],
+        toObject: () => posts[0],
       },
       {
-        _id: new mongoose.Types.ObjectId().toString(),
+        _id: likedPostId2,
         title: 'Second Post',
         content: 'Content of the second post',
         createdAt: new Date(),
+        likes: [],
+        toObject: () => posts[1],
       },
     ];
     const extraPostsMock = [
@@ -51,22 +57,31 @@ describe('GET /posts', () => {
         title: 'Third Post',
         content: 'Content of the third post',
         createdAt: new Date(),
+        likes: [],
+        toObject: () => extraPostsMock[0],
       },
       {
         _id: new mongoose.Types.ObjectId().toString(),
         title: 'Forth Post',
         content: 'Content of the forth post',
         createdAt: new Date(),
+        likes: [],
+        toObject: () => extraPostsMock[1],
       },
     ];
+
     const follows = [
       { id: '1', followed: new mongoose.Types.ObjectId().toString() },
       { id: '2', followed: new mongoose.Types.ObjectId().toString() },
       { id: '3', followed: new mongoose.Types.ObjectId().toString() },
     ];
 
+    const likedPostsIds = [
+      { _id: new mongoose.Types.ObjectId().toString(), post: likedPostId1 },
+      { _id: new mongoose.Types.ObjectId().toString(), post: likedPostId2 },
+    ];
     Follow.find.mockResolvedValue(follows);
-
+    Like.find.mockImplementation(() => ({ select: () => likedPostsIds }));
     Post.find = jest
       .fn()
       .mockImplementationOnce(() => ({
@@ -84,6 +99,8 @@ describe('GET /posts', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.posts).toHaveLength(4);
+    expect(response.body.posts[0].likedByUser).toBe(true);
+    expect(response.body.posts[1].likedByUser).toBe(true);
     expect(response.body.posts[0].title).toBe('First Post');
   });
 
@@ -111,6 +128,28 @@ describe('GET /posts', () => {
     expect(response.body.errors[0].msg).toBe(
       'Page must be a number greater than 0.'
     );
+  });
+
+  it('should handle cases where no posts are found', async () => {
+    Follow.find.mockResolvedValue([]);
+    Like.find.mockImplementation(() => ({ select: () => [] }));
+    Post.find = jest
+      .fn()
+      .mockImplementationOnce(() => ({
+        populate: () => ({
+          sort: () => ({ skip: () => ({ limit: () => [] }) }),
+        }),
+      }))
+      .mockImplementationOnce(() => ({
+        populate: () => ({ sort: () => ({ limit: () => [] }) }),
+      }));
+
+    const response = await request(app)
+      .get('/posts')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.posts).toHaveLength(0);
   });
 
   it('Should return 401 if not authenticated', async () => {
@@ -500,7 +539,7 @@ describe('DELETE /posts/:postId', () => {
 
   const token = generateToken(userDataPayload);
 
-  it('Should delete a post successfully', async () => {
+  it('Should delete a post successfully with associated likes and comments', async () => {
     const post = {
       _id: postId,
       content: 'Original content',
@@ -509,12 +548,16 @@ describe('DELETE /posts/:postId', () => {
     };
 
     Post.findById.mockResolvedValue(post);
+    Comment.deleteMany.mockResolvedValue({ deletedCount: 0 });
+    Like.deleteMany.mockResolvedValue({ deletedCount: 0 });
 
     const response = await request(app)
       .delete(`/posts/${postId}`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
+    expect(response.body.deletedLikes).toBe(0);
+    expect(response.body.deletedComments).toBe(0);
     expect(response.body.message).toBe('Post deleted');
   });
 
