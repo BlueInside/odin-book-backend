@@ -14,7 +14,7 @@ router.get(
   '/github/callback',
   passport.authenticate('github', {
     session: false,
-    failureRedirect: '/login',
+    failureRedirect: 'http://localhost:5173/sign',
   }),
 
   function (req, res) {
@@ -23,7 +23,14 @@ router.get(
     }
     const token = generateToken(req.user);
 
-    return res.status(200).json({ success: true, token: token });
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'None',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    return res.redirect('http://localhost:5173/');
   }
 );
 
