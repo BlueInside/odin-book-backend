@@ -13,8 +13,19 @@ const createComment = asyncHandler(async (req, res, next) => {
       content: content,
     });
 
+    const post = await Post.findById(postId);
+    if (!post) {
+      res.status(404).json({ message: 'Post not found.' });
+      return;
+    }
+    post.comments.push(comment._id);
+
+    await post.save();
     await comment.save();
-    res.status(201).json({ message: 'Comment successfully added.' });
+
+    res
+      .status(201)
+      .json({ message: 'Comment successfully added.', comment: comment });
   } catch (error) {
     res.status(500).json({ message: 'Failed to add comment.' });
   }
