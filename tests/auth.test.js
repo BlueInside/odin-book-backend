@@ -2,9 +2,11 @@ const auth = require('../routes/auth');
 const request = require('supertest');
 const express = require('express');
 const app = express();
+const cookieParser = require('cookie-parser');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 app.use('/', auth);
 
 const { generateToken } = require('../config/jwt');
@@ -23,6 +25,16 @@ describe('GET /validate', () => {
     const response = await request(app)
       .get('/verify')
       .set('authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('message');
+    expect(response.body).toHaveProperty('user');
+  });
+
+  it('Should get 200 when token is inside cookie', async () => {
+    const cookie = `jwt=${token}`;
+
+    const response = await request(app).get('/verify').set('Cookie', cookie);
 
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('message');
