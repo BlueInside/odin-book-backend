@@ -10,12 +10,18 @@ const verify = async (accessToken, refreshToken, profile, cb) => {
     let user = await User.findOne({ githubId: profile.id });
 
     if (!user) {
+      const defaultAvatar =
+        'https://res.cloudinary.com/dhjzutfu9/image/upload/v1719395403/odin-project/avatar_owpfg7.webp';
+      const profilePicture = profile.photos?.length
+        ? profile.photos[0].value
+        : defaultAvatar;
+
       user = await User.create({
         githubId: profile.id,
         firstName: profile.username || 'Unknown',
         lastName: '', // GitHub does not provide a separate last name.
         email: profile.email || '', // Handle the case where email may be null
-        profilePicture: profile.photos[0].value || '', // Use the avatar URL if available
+        profilePicture: profilePicture,
         bio: profile._json.bio || '', // Access bio from the _json object safely
         role: 'user',
       });
