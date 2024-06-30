@@ -70,10 +70,12 @@ describe('GET /posts', () => {
     Post.find = jest
       .fn()
       .mockImplementationOnce(() => ({
-        sort: () => ({ skip: () => ({ limit: () => posts }) }),
+        populate: () => ({
+          sort: () => ({ skip: () => ({ limit: () => posts }) }),
+        }),
       }))
       .mockImplementationOnce(() => ({
-        sort: () => ({ limit: () => extraPostsMock }),
+        populate: () => ({ sort: () => ({ limit: () => extraPostsMock }) }),
       }));
 
     const response = await request(app)
@@ -130,6 +132,16 @@ describe('GET /posts/:postId', () => {
     role: 'admin',
   };
 
+  const commentMock = [
+    {
+      id: postId,
+      content: 'some content',
+      author: {
+        id: '6666a2cbca00e5e53fa5e5eb',
+        firstName: 'BlueInside',
+      },
+    },
+  ];
   const token = generateToken(userDataPayload);
 
   it('Should get individual post successfully', async () => {
@@ -140,7 +152,10 @@ describe('GET /posts/:postId', () => {
       createdAt: new Date(),
     };
 
-    Post.findById.mockResolvedValue(post);
+    Comment.find.mockImplementation(() => ({ populate: () => commentMock }));
+    Post.findById.mockImplementation(() => ({
+      populate: () => post,
+    }));
 
     const response = await request(app)
       .get(`/posts/${postId}`)
@@ -152,7 +167,10 @@ describe('GET /posts/:postId', () => {
   });
 
   it('Should return 404 if post not found', async () => {
-    Post.findById.mockResolvedValue(null);
+    Comment.find.mockImplementation(() => ({ populate: () => commentMock }));
+    Post.findById.mockImplementation(() => ({
+      populate: () => null,
+    }));
 
     const response = await request(app)
       .get(`/posts/${postId}`)
@@ -265,7 +283,7 @@ describe('GET /posts/:postId/comments', () => {
       },
     ];
 
-    Comment.find.mockResolvedValue(comments);
+    Comment.find.mockImplementation(() => ({ populate: () => comments }));
     const response = await request(app)
       .get(`/posts/${postId}/comments`)
       .set('Authorization', `Bearer ${token}`);
@@ -276,7 +294,7 @@ describe('GET /posts/:postId/comments', () => {
   });
 
   it('Should return 404 if no comments found for the post', async () => {
-    Comment.find.mockResolvedValue(undefined);
+    Comment.find.mockImplementation(() => ({ populate: () => undefined }));
 
     const response = await request(app)
       .get(`/posts/${postId}/comments`)
@@ -539,18 +557,18 @@ describe('DELETE /posts/:postId', () => {
       _id: postId,
       content: 'Original content',
       author: 'some different user ID',
-      remove: mockRemove,
     };
 
     Post.findById.mockResolvedValue(post);
+    Post.findByIdAndDelete.mockResolvedValue(post);
 
     const response = await request(app)
       .delete(`/posts/${postId}`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
-    expect(mockRemove).toHaveBeenCalled();
     expect(response.body.message).toBe('Post deleted');
+    expect(response.body).toHaveProperty('deletedPost', post);
   });
 
   it('Should return 400 if postId is invalid', async () => {
