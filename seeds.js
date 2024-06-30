@@ -31,6 +31,7 @@ async function seedDatabase() {
 
   for (let i = 0; i < 20; i++) {
     const user = new User({
+      githubId: faker.string.uuid(),
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
       password: faker.internet.password(),
@@ -73,13 +74,19 @@ async function seedDatabase() {
   }
 
   for (let i = 0; i < 50; i++) {
+    const commentAuthor = faker.helpers.arrayElement(users);
+    const commentPost = faker.helpers.arrayElement(posts);
     const comment = new Comment({
       content: faker.lorem.sentences(),
-      author: faker.helpers.arrayElement(users)._id,
-      post: faker.helpers.arrayElement(posts)._id,
+      author: commentAuthor._id,
+      post: commentPost._id,
     });
+
     await comment.save();
     comments.push(comment);
+
+    commentPost.comments.push(comment._id);
+    await commentPost.save();
   }
 
   while (likes.size < 50) {
