@@ -8,13 +8,13 @@ const {
 } = require('../lib/commentValidation');
 
 router.post(
-  '/comments',
+  '/',
   authenticateToken,
   createCommentValidation(),
   commentsController.createComment
 );
 router.delete(
-  '/comments',
+  '/',
   authenticateToken,
   deleteCommentValidation(),
   commentsController.deleteComment
