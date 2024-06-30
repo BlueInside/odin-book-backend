@@ -11,7 +11,7 @@ const generateToken = (user) => {
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer token
+  const token = req.cookies?.jwt || (authHeader && authHeader.split(' ')[1]); // Bearer token
 
   if (token == null)
     return res
