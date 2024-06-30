@@ -13,7 +13,7 @@ jest.mock('../models/post'); // Mock the Post model
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use('/', commentRoute);
+app.use('/comments', commentRoute);
 
 describe('POST /comments', () => {
   const userId = new mongoose.Types.ObjectId().toString();
@@ -30,9 +30,16 @@ describe('POST /comments', () => {
     content: 'This is a test comment.',
     postId,
   };
+  const postData = {
+    id: postId,
+    content: 'some content',
+    comments: [],
+    save: jest.fn(),
+  };
 
   it('should allow a user to successfully add a comment', async () => {
     Comment.prototype.save = jest.fn().mockResolvedValue(commentData);
+    Post.findById.mockResolvedValue(postData);
 
     const response = await request(app)
       .post('/comments')
@@ -88,6 +95,13 @@ describe('DELETE /comments', () => {
     id: userId,
     firstName: 'Karol',
     role: 'admin',
+  };
+
+  const postData = {
+    id: postId,
+    content: 'some content',
+    comments: [],
+    save: jest.fn(),
   };
 
   const token = generateToken(userDataPayload);
