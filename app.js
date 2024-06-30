@@ -34,9 +34,12 @@ const limiter = rateLimit({
 
 // CORS settings
 const corsOptions = {
-  origin: '',
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
   optionsSuccessStatus: 200,
 };
+
 // Routes
 const userRoutes = require('./routes/user');
 const postRoutes = require('./routes/post');
@@ -47,12 +50,13 @@ const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const mediaRoutes = require('./routes/media');
 
+app.use(cors(corsOptions));
 app.use(helmet());
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(passport.initialize());
-app.use(limiter);
+// app.use(limiter);
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
