@@ -14,6 +14,12 @@ const userSchema = new Schema(
     lastName: { type: String, index: true, default: '' }, // Set default if empty
     email: { type: String, unique: true, sparse: true }, // Make email sparse for uniqueness only when it is provided
     profilePicture: { type: String },
+    birthday: { type: Date },
+    coverPhoto: { type: String },
+    relationship: {
+      type: String,
+      enum: ['Single', `Complicated`, 'In relationship'],
+    },
     bio: { type: String },
     isActive: { type: Boolean, default: true },
     dateJoined: { type: Date, default: Date.now },
