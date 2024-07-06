@@ -7,10 +7,12 @@ const Like = require('../models/like');
 const mongoose = require('mongoose');
 const app = express();
 const { generateToken } = require('../config/jwt');
+const Follow = require('../models/follow');
 
 jest.mock('../models/user');
 jest.mock('../models/post');
 jest.mock('../models/like');
+jest.mock('../models/follow');
 
 // Middleware
 app.use(express.json());
@@ -106,9 +108,10 @@ describe('GET /users/:userId', () => {
       firstName: 'John',
       lastName: 'Doe',
       email: 'john.doe@example.com',
+      _doc: {},
     };
     User.findById.mockImplementation(() => ({ select: () => fakeUser })); // Mock findById to return a fake user
-
+    Follow.findOne.mockImplementation(() => ({ id: 'followerFound' }));
     const response = await request(app)
       .get(`/users/${fakeUser._id}`)
       .set('Authorization', `Bearer ${token}`);
@@ -116,6 +119,7 @@ describe('GET /users/:userId', () => {
     expect(response.status).toBe(200);
     expect(response.body.user).toBeDefined();
     expect(response.body.user._id).toEqual(fakeUser._id);
+    expect(response.body.user._doc.isFollwedByCurrentUser).toBe(true);
   });
 
   it('Should return 400 for an invalid user ID', async () => {
