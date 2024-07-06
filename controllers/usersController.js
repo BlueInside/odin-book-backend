@@ -3,6 +3,7 @@ const User = require('../models/user');
 const Post = require('../models/post');
 const Like = require('../models/like');
 const mongoose = require('mongoose');
+const Follow = require('../models/follow');
 
 const getAllUsers = asyncHandler(async (req, res, next) => {
   // return list of all users if no search query
@@ -29,12 +30,20 @@ const getAllUsers = asyncHandler(async (req, res, next) => {
 
 const getUser = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
+  const { currentUserId } = req.user.id;
 
   const user = await User.findById(userId).select('-password');
 
   if (!user) {
     return res.status(404).json({ error: 'User not found.' });
   }
+
+  const isFollowing = await Follow.findOne({
+    followed: userId,
+    follower: currentUserId,
+  });
+
+  user._doc.isFollwedByCurrentUser = !!isFollowing;
 
   return res.status(200).json({ user: user });
 });
@@ -43,7 +52,7 @@ const getUserPosts = asyncHandler(async (req, res, next) => {
   // Add pagination and filtering?
   const { userId } = req.params;
 
-  const posts = await Post.find({ user: userId }).sort({ createdAt: 1 });
+  const posts = await Post.find({ author: userId }).sort({ createdAt: -1 });
 
   if (!posts.length) {
     return res.status(404).json({ error: `This user has no posts yet.` });
@@ -78,7 +87,15 @@ const updateUser = asyncHandler(async (req, res, next) => {
   // Sanitize and validate input!
   // Authenticated users only
   const { userId } = req.params;
-  const { firstName, lastName, profilePicture, bio } = req.body;
+  const {
+    firstName,
+    lastName,
+    profilePicture,
+    bio,
+    birthday,
+    coverPhoto,
+    relationship,
+  } = req.body;
 
   if (req.user.role !== 'admin' && req.user.id !== userId) {
     return res
@@ -88,10 +105,18 @@ const updateUser = asyncHandler(async (req, res, next) => {
 
   const updates = {
     firstName: firstName,
-    lastName: lastName || '',
-    profilePicture: profilePicture || '',
-    bio: bio || '',
+    lastName: lastName,
+    profilePicture: profilePicture,
+    bio: bio,
+    birthday: birthday ? new Date(birthday) : undefined,
+    coverPhoto: coverPhoto,
+    relationship: relationship,
   };
+
+  // Remove undefined values
+  Object.keys(updates).forEach(
+    (key) => updates[key] === undefined && delete updates[key]
+  );
 
   try {
     // Find by ID and update the user
