@@ -22,6 +22,7 @@ router.get(
 
 router.get(
   '/:userId/posts',
+  authenticateToken,
   getUserPostsValidation(),
   userController.getUserPosts
 );
