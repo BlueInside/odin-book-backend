@@ -80,6 +80,7 @@ describe('GET /posts', () => {
       { _id: new mongoose.Types.ObjectId().toString(), post: likedPostId1 },
       { _id: new mongoose.Types.ObjectId().toString(), post: likedPostId2 },
     ];
+
     Follow.find.mockResolvedValue(follows);
     Like.find.mockImplementation(() => ({ select: () => likedPostsIds }));
     Post.find = jest
