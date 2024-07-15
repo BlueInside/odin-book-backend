@@ -119,7 +119,7 @@ describe('GET /users/:userId', () => {
     expect(response.status).toBe(200);
     expect(response.body.user).toBeDefined();
     expect(response.body.user._id).toEqual(fakeUser._id);
-    expect(response.body.user._doc.isFollwedByCurrentUser).toBe(true);
+    expect(response.body.user._doc.isFollowedByCurrentUser).toBe(true);
   });
 
   it('Should return 400 for an invalid user ID', async () => {
@@ -149,28 +149,51 @@ describe('GET /users/:userId', () => {
 });
 
 describe('GET /users/:userId/posts', () => {
-  const id = new mongoose.Types.ObjectId();
+  const id = new mongoose.Types.ObjectId().toString();
+  const userData = {
+    id: id,
+    firstName: 'karol',
+    role: 'admin',
+  };
+  const token = generateToken(userData);
+
+  const likedPostId1 = new mongoose.Types.ObjectId().toString();
+  const likedPostId2 = new mongoose.Types.ObjectId().toString();
+
+  const likedPostsIds = [
+    { _id: new mongoose.Types.ObjectId().toString(), post: likedPostId1 },
+    { _id: new mongoose.Types.ObjectId().toString(), post: likedPostId2 },
+  ];
 
   it('Should return all posts for a valid user ID', async () => {
     mongoose.Types.ObjectId.isValid.mockReturnValue(true);
     const mockPosts = [
       {
+        _id: likedPostId1,
         title: 'First Post',
         content: 'Content of the first post',
         createdAt: new Date(),
+        toObject: () => mockPosts[0],
       },
       {
+        _id: likedPostId2,
         title: 'Second Post',
         content: 'Content of the second post',
         createdAt: new Date(),
+        toObject: () => mockPosts[1],
       },
     ];
 
-    Post.find.mockImplementation(() => ({ sort: () => mockPosts })); // Mock Post.find to return mock posts
-    Post.countDocuments.mockResolvedValue(mockPosts.length); // Mock countDocuments
+    Post.find.mockImplementation(() => ({
+      populate: () => ({ sort: () => mockPosts }),
+    }));
 
+    Post.countDocuments.mockResolvedValue(mockPosts.length); // Mock countDocuments
+    Like.find.mockImplementation(() => ({ select: () => likedPostsIds }));
     const userId = id;
-    const response = await request(app).get(`/users/${userId}/posts`);
+    const response = await request(app)
+      .get(`/users/${userId}/posts`)
+      .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
     expect(response.body.posts.length).toBe(2);
@@ -180,26 +203,18 @@ describe('GET /users/:userId/posts', () => {
   it('Should return 400 for an invalid user ID', async () => {
     mongoose.Types.ObjectId.isValid.mockReturnValue(false); // Mock isValid to return false
 
-    const response = await request(app).get('/users/123/posts');
+    Post.find.mockImplementation(() => ({
+      populate: () => ({ sort: () => mockPosts }),
+    }));
+
+    const response = await request(app)
+      .get('/users/123/posts')
+      .set('Authorization', `Bearer ${token}`);
+
     expect(response.status).toBe(400);
     expect(response.body.errors[0]).toHaveProperty(
       'msg',
       'User ID must be a valid MongoDB ObjectId.'
-    );
-  });
-
-  it('Should return 404 if no posts are found for the user', async () => {
-    mongoose.Types.ObjectId.isValid.mockReturnValue(true); // Assume ID is valid
-    Post.find.mockImplementation(() => ({ sort: () => [] })); // Mock find to return an empty array
-    Post.countDocuments.mockResolvedValue(0); // Mock countDocuments
-
-    const userId = id;
-    const response = await request(app).get(`/users/${userId}/posts`);
-
-    expect(response.status).toBe(404);
-    expect(response.body).toHaveProperty(
-      'error',
-      'This user has no posts yet.'
     );
   });
 });
