@@ -43,24 +43,35 @@ const getUser = asyncHandler(async (req, res, next) => {
     follower: currentUserId,
   });
 
-  user._doc.isFollwedByCurrentUser = !!isFollowing;
+  user._doc.isFollowedByCurrentUser = !!isFollowing;
 
   return res.status(200).json({ user: user });
 });
 
 const getUserPosts = asyncHandler(async (req, res, next) => {
   // Add pagination and filtering?
+  const currentUser = req.user.id;
   const { userId } = req.params;
 
-  const posts = await Post.find({ author: userId }).sort({ createdAt: -1 });
-
-  if (!posts.length) {
-    return res.status(404).json({ error: `This user has no posts yet.` });
-  }
+  const posts = await Post.find({ author: userId })
+    .populate('author', 'profilePicture firstName')
+    .sort({ createdAt: -1 });
 
   const totalPosts = await Post.countDocuments({ user: userId });
 
-  return res.status(200).json({ posts: posts, totalPosts: totalPosts });
+  const likedPostsIds = await Like.find({ user: currentUser }).select('post');
+  const likedPostsSet = new Set(likedPostsIds.map((lp) => lp.post.toString()));
+
+  const postsWithLikes = posts.map((post) => ({
+    ...post.toObject(),
+    likedByUser: likedPostsSet.has(post._id.toString()),
+  }));
+
+  return res.status(200).json({
+    posts: postsWithLikes,
+    totalPosts: totalPosts,
+    likedPosts: likedPostsIds,
+  });
 });
 
 const getUserLikes = asyncHandler(async (req, res, next) => {
