@@ -76,7 +76,7 @@ describe('GET /users', () => {
     expect(response.body.users).toEqual(mockUsers);
   });
 
-  it('Should return 404 if no users are found', async () => {
+  it('Should return 200 and empty array if no users are found', async () => {
     User.find.mockImplementation(() => ({
       sort: () => ({
         limit: () => Promise.resolve([]),
@@ -84,8 +84,8 @@ describe('GET /users', () => {
     }));
 
     const response = await request(app).get('/users');
-    expect(response.status).toBe(404);
-    expect(response.body).toHaveProperty('error', 'Users not found.');
+    expect(response.status).toBe(200);
+    expect(response.body.users).toEqual([]);
   });
 
   it(`Should get user by its id and return the user info`, async () => {});
