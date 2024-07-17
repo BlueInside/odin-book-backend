@@ -299,12 +299,9 @@ describe('PUT /users/:userId', () => {
     const response = await request(app)
       .put(`/users/${userId}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({
-        firstName: 'John',
-        lastName: 'Doe',
-        bio: 'New bio',
-        profilePicture: 'url_to_image',
-      });
+      .field('firstName', 'John')
+      .field('lastName', 'Doe')
+      .field('bio', 'New bio');
 
     expect(response.status).toBe(200);
     expect(response.body.user).toEqual(fakeUser);
@@ -317,7 +314,7 @@ describe('PUT /users/:userId', () => {
     const response = await request(app)
       .put(`/users/${userId}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ firstName: 'John' });
+      .field('firstName', 'John');
 
     expect(response.status).toBe(403);
     expect(response.body.error).toBe(
@@ -332,7 +329,7 @@ describe('PUT /users/:userId', () => {
     const response = await request(app)
       .put(`/users/${userId}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ firstName: 'John' });
+      .field('firstName', 'John');
 
     expect(response.status).toBe(404);
     expect(response.body.error).toBe('User not found.');
@@ -346,10 +343,26 @@ describe('PUT /users/:userId', () => {
     const response = await request(app)
       .put(`/users/${userId}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ firstName: 'John' });
+      .field('firstName', 'John');
 
     expect(response.status).toBe(500);
     expect(response.body.error).toBe('Something went wrong during the update.');
+  });
+
+  it('should return 400 for invalid email format', async () => {
+    const userId = id;
+    const invalidEmail = 'john.doe';
+
+    const response = await request(app)
+      .put(`/users/${userId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .field('firstName', 'Karol')
+      .field('email', invalidEmail);
+
+    expect(response.status).toBe(400);
+    expect(response.body.errors[0].msg).toContain(
+      'Please provide a valid email address'
+    );
   });
 });
 
