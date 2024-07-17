@@ -4,6 +4,7 @@ const Post = require('../models/post');
 const Like = require('../models/like');
 const mongoose = require('mongoose');
 const Follow = require('../models/follow');
+const { cloudinaryUpload } = require('../lib/cloudinaryUpload');
 
 const getAllUsers = asyncHandler(async (req, res, next) => {
   // return list of all users if no search query
@@ -98,15 +99,7 @@ const updateUser = asyncHandler(async (req, res, next) => {
   // Sanitize and validate input!
   // Authenticated users only
   const { userId } = req.params;
-  const {
-    firstName,
-    lastName,
-    profilePicture,
-    bio,
-    birthday,
-    coverPhoto,
-    relationship,
-  } = req.body;
+  const updates = { ...req.body };
 
   if (req.user.role !== 'admin' && req.user.id !== userId) {
     return res
@@ -114,15 +107,45 @@ const updateUser = asyncHandler(async (req, res, next) => {
       .json({ error: 'You do not have permission to update this profile.' });
   }
 
-  const updates = {
-    firstName: firstName,
-    lastName: lastName,
-    profilePicture: profilePicture,
-    bio: bio,
-    birthday: birthday ? new Date(birthday) : undefined,
-    coverPhoto: coverPhoto,
-    relationship: relationship,
-  };
+  updates.birthday = !!updates.birthday
+    ? new Date(updates.birthday)
+    : undefined;
+
+  if (req.files['profilePicture'] && req.files['profilePicture'][0]) {
+    const fileBuffer = req.files['profilePicture'][0].buffer;
+    try {
+      const profilePictureResult = await cloudinaryUpload(fileBuffer);
+      console.log('Profile picture upload successful:', profilePictureResult);
+      updates.profilePicture = profilePictureResult.url;
+    } catch (error) {
+      console.error('Upload failed', error);
+      if (error.message === 'An unknown file format not allowed')
+        return res.status(500).json({
+          error: `Image must be in: 'jpg', 'png', 'gif' or 'webp' format.`,
+        });
+      return res
+        .status(500)
+        .json({ error: `Failed to upload image: ${error.message}` });
+    }
+  }
+
+  if (req.files['coverPhoto'] && req.files['coverPhoto'][0]) {
+    const fileBuffer = req.files['coverPhoto'][0].buffer;
+    try {
+      const coverPhotoResult = await cloudinaryUpload(fileBuffer);
+      console.log('Cover photo upload successful:', coverPhotoResult);
+      updates.coverPhoto = coverPhotoResult.url;
+    } catch (error) {
+      console.error('Upload failed', error);
+      if (error.message === 'An unknown file format not allowed')
+        return res.status(500).json({
+          error: `Image must be in: 'jpg', 'png', 'gif' or 'webp' format.`,
+        });
+      return res
+        .status(500)
+        .json({ error: `Failed to upload image: ${error.message}` });
+    }
+  }
 
   // Remove undefined values
   Object.keys(updates).forEach(
