@@ -22,10 +22,6 @@ const getAllUsers = asyncHandler(async (req, res, next) => {
     .sort({ firstName: 1 })
     .limit(10);
 
-  if (!users.length) {
-    return res.status(404).json({ error: 'Users not found.' });
-  }
-
   return res.status(200).json({ users: users });
 });
 
