@@ -53,7 +53,7 @@ const getAllUsers = asyncHandler(async (req, res, next) => {
 
 const getUser = asyncHandler(async (req, res, next) => {
   const { userId } = req.params;
-  const { currentUserId } = req.user.id;
+  const currentUserId = req.user.id;
 
   const user = await User.findById(userId).select('-password');
 
@@ -62,10 +62,9 @@ const getUser = asyncHandler(async (req, res, next) => {
   }
 
   const isFollowing = await Follow.findOne({
-    followed: userId,
     follower: currentUserId,
+    followed: userId,
   });
-
   user._doc.isFollowedByCurrentUser = !!isFollowing;
 
   return res.status(200).json({ user: user });
