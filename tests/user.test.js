@@ -19,71 +19,105 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use('/users', userRoute);
 
-// error handler
-app.use(function (err, req, res, next) {
-  const isDevelopment = req.app.get('env') === 'development';
-
-  let errorResponse = {
-    success: false,
-    error: {
-      message: err.message || 'Server Error',
-    },
-  };
-
-  if (isDevelopment) {
-    errorResponse.error.stack = err.stack;
-  }
-
-  const statusCode = err.status || 500;
-
-  console.error(err);
-
-  res.status(statusCode).json(errorResponse);
-});
-
 describe('GET /users', () => {
+  const id = new mongoose.Types.ObjectId().toString();
+  const followedId = new mongoose.Types.ObjectId().toString();
+  const followedId2 = new mongoose.Types.ObjectId().toString();
+
+  const mockFollowedUsers = [
+    { _id: 'follow1', followed: followedId },
+    { _id: 'follow2', followed: followedId2 },
+  ];
+
+  const userData = {
+    id: id,
+    firstName: 'karol',
+    role: 'admin',
+  };
+  const token = generateToken(userData);
+
   it('Should get list of all the users with no query provided', async () => {
     // Create a mock list of users
     const mockUsers = [
-      { firstName: 'John', lastName: 'Doe', fullName: 'John Doe' },
-      { firstName: 'Jane', lastName: 'Doe', fullName: 'Jane Doe' },
+      {
+        _id: followedId,
+        firstName: 'John',
+        lastName: 'Doe',
+        fullName: 'John Doe',
+        toObject: () => mockUsers[0],
+      },
+      {
+        _id: 'notFollowed',
+        firstName: 'Jane',
+        lastName: 'Doe',
+        fullName: 'Jane Doe',
+        toObject: () => mockUsers[1],
+      },
     ];
 
     // Mock the User.find method to return mock users and handle the sorting
     User.find.mockImplementation(() => ({
       sort: () => ({
-        limit: () => Promise.resolve(mockUsers), // ensure sort returns a promise that resolves to mockUsers
+        skip: () => ({
+          limit: () => Promise.resolve(mockUsers), // ensure sort returns a promise that resolves to mockUsers
+        }),
       }),
     }));
 
-    const response = await request(app).get('/users');
+    Follow.find.mockImplementation(() => ({ select: () => mockFollowedUsers }));
+
+    const response = await request(app)
+      .get('/users')
+      .set('Authorization', `Bearer ${token}`);
+
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('users');
+    expect(response.body.users[0]).toHaveProperty('followedByUser', true);
   });
 
   it('Should return users matching the search query', async () => {
     const mockUsers = [
-      { firstName: 'John', lastName: 'Doe', fullName: 'John Doe' },
+      {
+        _id: followedId,
+        firstName: 'John',
+        lastName: 'Doe',
+        followedByUser: true,
+        fullName: 'John Doe',
+        toObject: () => mockUsers[0],
+      },
     ];
     User.find.mockImplementation(() => ({
       sort: () => ({
-        limit: () => Promise.resolve(mockUsers),
+        skip: () => ({
+          limit: () => Promise.resolve(mockUsers), // ensure sort returns a promise that resolves to mockUsers
+        }),
       }),
     }));
 
-    const response = await request(app).get('/users').query('q=John');
+    Follow.find.mockImplementation(() => ({ select: () => mockFollowedUsers }));
+
+    const response = await request(app)
+      .get('/users')
+      .query('q=John')
+      .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
-    expect(response.body.users).toEqual(mockUsers);
+    expect(response.body.users[0]._id).toEqual(mockUsers[0]._id);
+    expect(response.body.users[0].firstName).toEqual(mockUsers[0].firstName);
+    expect(response.body.users[0].followedByUser).toEqual(true);
   });
 
   it('Should return 200 and empty array if no users are found', async () => {
     User.find.mockImplementation(() => ({
       sort: () => ({
-        limit: () => Promise.resolve([]),
+        skip: () => ({
+          limit: () => Promise.resolve([]), // ensure sort returns a promise that resolves to mockUsers
+        }),
       }),
     }));
 
-    const response = await request(app).get('/users');
+    const response = await request(app)
+      .get('/users')
+      .set('Authorization', `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.users).toEqual([]);
   });
