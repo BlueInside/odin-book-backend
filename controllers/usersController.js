@@ -8,9 +8,10 @@ const { cloudinaryUpload } = require('../lib/cloudinaryUpload');
 
 const getAllUsers = asyncHandler(async (req, res, next) => {
   // return list of all users if no search query
-  const { q } = req.query;
+  const { q, page = 1, limit = 10 } = req.query;
+  const userId = req.user.id;
   const query = {};
-
+  const skip = (page - 1) * limit;
   if (q) {
     query.$or = [
       { firstName: { $regex: q, $options: 'i' } },
@@ -18,11 +19,36 @@ const getAllUsers = asyncHandler(async (req, res, next) => {
     ];
   }
 
-  const users = await User.find(query, 'firstName lastName')
-    .sort({ firstName: 1 })
-    .limit(10);
+  const totalUsers = await User.countDocuments(query);
 
-  return res.status(200).json({ users: users });
+  const users = await User.find(query, 'firstName lastName profilePicture')
+    .sort({ firstName: 1 })
+    .skip(skip)
+    .limit(limit);
+
+  const followedUsersIds = await Follow.find({ follower: userId }).select(
+    'followed -_id'
+  );
+
+  const followedUsersSet = new Set(
+    followedUsersIds.map((follow) => follow.followed.toString())
+  );
+
+  const usersWithFollowInfo = users.map((user) => ({
+    ...user.toObject(),
+    followedByUser: followedUsersSet.has(user._id.toString()),
+  }));
+
+  const totalPages = Math.ceil(totalUsers / limit);
+
+  const hasNextPage = page < totalPages;
+
+  return res.status(200).json({
+    users: usersWithFollowInfo,
+    currentPage: page,
+    hasNextPage: hasNextPage,
+    totalPages: totalPages,
+  });
 });
 
 const getUser = asyncHandler(async (req, res, next) => {
