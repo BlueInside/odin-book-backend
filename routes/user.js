@@ -13,7 +13,12 @@ const {
 } = require('../lib/userValidation');
 const { authenticateToken } = require('../config/jwt');
 
-router.get('/', getAllUsersValidation(), userController.getAllUsers);
+router.get(
+  '/',
+  authenticateToken,
+  getAllUsersValidation(),
+  userController.getAllUsers
+);
 
 router.get(
   '/:userId',
