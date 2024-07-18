@@ -73,11 +73,13 @@ const follow = asyncHandler(async (req, res, next) => {
     follower: followerId,
     followed: followedId,
   });
+
   if (existingFollow) {
     return res
       .status(400)
       .json({ message: 'You are already following this user.' });
   }
+
   try {
     const follow = new Follow({
       follower: followerId,
