@@ -73,14 +73,19 @@ const getUser = asyncHandler(async (req, res, next) => {
 
 const getUserPosts = asyncHandler(async (req, res, next) => {
   // Add pagination and filtering?
+  const { page = 1, limit = 10 } = req.query;
   const currentUser = req.user.id;
   const { userId } = req.params;
 
   const posts = await Post.find({ author: userId })
     .populate('author', 'profilePicture firstName')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit);
 
   const totalPosts = await Post.countDocuments({ user: userId });
+  const totalPages = Math.ceil(totalPosts / limit);
+  const hasNextPage = page < totalPosts;
 
   const likedPostsIds = await Like.find({ user: currentUser }).select('post');
   const likedPostsSet = new Set(likedPostsIds.map((lp) => lp.post.toString()));
@@ -92,8 +97,9 @@ const getUserPosts = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     posts: postsWithLikes,
-    totalPosts: totalPosts,
-    likedPosts: likedPostsIds,
+    currentPage: page,
+    hasNextPage: hasNextPage,
+    totalPages: totalPages,
   });
 });
 
@@ -136,7 +142,10 @@ const updateUser = asyncHandler(async (req, res, next) => {
   if (req.files['profilePicture'] && req.files['profilePicture'][0]) {
     const fileBuffer = req.files['profilePicture'][0].buffer;
     try {
-      const profilePictureResult = await cloudinaryUpload(fileBuffer);
+      const profilePictureResult = await cloudinaryUpload(
+        fileBuffer,
+        'odin-book-profilePictures'
+      );
       console.log('Profile picture upload successful:', profilePictureResult);
       updates.profilePicture = profilePictureResult.url;
     } catch (error) {
@@ -154,7 +163,10 @@ const updateUser = asyncHandler(async (req, res, next) => {
   if (req.files['coverPhoto'] && req.files['coverPhoto'][0]) {
     const fileBuffer = req.files['coverPhoto'][0].buffer;
     try {
-      const coverPhotoResult = await cloudinaryUpload(fileBuffer);
+      const coverPhotoResult = await cloudinaryUpload(
+        fileBuffer,
+        'odin-book-profilePictures'
+      );
       console.log('Cover photo upload successful:', coverPhotoResult);
       updates.coverPhoto = coverPhotoResult.url;
     } catch (error) {
