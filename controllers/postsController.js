@@ -4,6 +4,8 @@ const Like = require('../models/like');
 const Comment = require('../models/comment');
 const Follow = require('../models/follow');
 const like = require('../models/like');
+const Media = require('../models/media');
+const cloudinary = require('cloudinary').v2;
 
 const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
   const { page = 1, limit = 10 } = req.query;
@@ -19,6 +21,7 @@ const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
 
   let posts = await Post.find({})
     .populate('author', 'profilePicture firstName')
+    .populate('media', 'url')
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit);
@@ -121,8 +124,35 @@ const createPost = asyncHandler(async (req, res, next) => {
     author,
   });
 
-  const savedPost = await newPost.save();
+  if (req.file) {
+    try {
+      const result = await cloudinaryUpload(
+        req.file.buffer,
+        'odin-book-medias'
+      );
+      console.log('Profile picture upload successful:', result);
+      const newMedia = new Media({
+        url: result.url,
+        type: 'image',
+        post: newPost._id,
+        publicId: result.public_id,
+      });
 
+      await newMedia.save();
+      newPost.media = newMedia._id;
+    } catch (error) {
+      console.error('Upload failed', error);
+      if (error.message === 'An unknown file format not allowed')
+        return res.status(500).json({
+          error: `Image must be in: 'jpg', 'png', 'gif' or 'webp' format.`,
+        });
+      return res
+        .status(500)
+        .json({ error: `Failed to upload image: ${error.message}` });
+    }
+  }
+
+  const savedPost = await newPost.save();
   return res.status(201).json({ post: savedPost });
 });
 
@@ -166,15 +196,33 @@ const deletePost = asyncHandler(async (req, res, next) => {
       .json({ message: 'User not authorized to delete this post!' });
   }
 
+  const media = await Media.findOne({ post: postId });
+
+  // Remove media from cloudinary
+  if (media) {
+    cloudinary.uploader
+      .destroy(media.publicId, { type: 'upload', resource_type: 'image' })
+      .then((result) => {
+        console.log(`Media successfully removed from cloudinary: `, result);
+      })
+      .catch((error) => {
+        console.log('Error removing media: ', error);
+      });
+  }
+
   const deletedComments = await Comment.deleteMany({ post: postId });
   const deletedLikes = await like.deleteMany({ post: postId });
+  const deletedMedia = await Media.deleteMany({ post: postId });
   const deletedPost = await Post.findByIdAndDelete(postId);
+
+  console.log(`MEDIA: `, deletedMedia.deletedCount);
 
   return res.status(200).json({
     message: 'Post deleted',
     deletedPost: deletedPost,
     deletedComments: deletedComments.deletedCount,
     deletedLikes: deletedLikes.deletedCount,
+    deletedMedia: deletedMedia.deletedCount,
   });
 });
 
