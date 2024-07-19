@@ -12,6 +12,7 @@ const getAllUsers = asyncHandler(async (req, res, next) => {
   const userId = req.user.id;
   const query = {};
   const skip = (page - 1) * limit;
+
   if (q) {
     query.$or = [
       { firstName: { $regex: q, $options: 'i' } },
