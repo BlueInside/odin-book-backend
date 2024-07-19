@@ -6,31 +6,43 @@ const Follow = require('../models/follow');
 const like = require('../models/like');
 
 const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
+  const { page = 1, limit = 10 } = req.query;
   const userId = req.user.id;
 
   const follows = await Follow.find({ follower: userId }, 'followed');
   const followedIds = follows.map((follow) => follow.followed);
   const allRelevantUserIds = [userId, ...followedIds];
 
-  let posts = await Post.find({
-    author: { $in: allRelevantUserIds },
-  })
+  const totalPosts = await Post.countDocuments({});
+  const totalPages = Math.ceil(totalPosts / limit);
+  const hasNextPage = page < totalPosts;
+
+  let posts = await Post.find({})
     .populate('author', 'profilePicture firstName')
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit);
-  if (posts.length < limit) {
-    const extraPostsNeeded = limit - posts.length;
-    const randomPosts = await Post.find({
-      author: { $nin: allRelevantUserIds },
-    })
-      .populate('author', 'profilePicture firstName')
-      .sort({ createdAt: -1 })
-      .limit(extraPostsNeeded);
-    posts = [...posts, ...randomPosts];
-  }
+
+  // TODO add personalized posts!!!
+
+  // let posts = await Post.find({
+  //   author: { $in: allRelevantUserIds },
+  // })
+  //   .populate('author', 'profilePicture firstName')
+  //   .sort({ createdAt: -1 })
+  //   .skip((page - 1) * limit)
+  //   .limit(limit);
+
+  // if (posts.length < limit) {
+  //   const extraPostsNeeded = limit - posts.length;
+  //   const randomPosts = await Post.find({
+  //     author: { $nin: allRelevantUserIds },
+  //   })
+  //     .populate('author', 'profilePicture firstName')
+  //     .sort({ createdAt: -1 })
+  //     .limit(extraPostsNeeded);
+  //   posts = [...posts, ...randomPosts];
+  // }
 
   const likedPostsIds = await Like.find({ user: userId }).select('post');
   const likedPostsSet = new Set(likedPostsIds.map((lp) => lp.post.toString()));
@@ -42,8 +54,9 @@ const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
 
   return res.status(200).json({
     posts: postsWithLikes,
-    page: page,
-    pageSize: posts.length,
+    currentPage: page,
+    hasNextPage: hasNextPage,
+    totalPages: totalPages,
   });
 });
 
