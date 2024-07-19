@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/usersController');
-const { uploadFiles } = require('../lib/multer');
+const { uploadProfilePictures } = require('../lib/multer');
 
 const {
   getAllUsersValidation,
@@ -43,7 +43,7 @@ router.get(
 router.put(
   '/:userId',
   authenticateToken,
-  uploadFiles,
+  uploadProfilePictures,
   updateUserValidation(),
   userController.updateUser
 );
