@@ -18,6 +18,10 @@ const mediaSchema = new Schema(
       ref: 'Post',
       required: true,
     },
+    publicId: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true,
