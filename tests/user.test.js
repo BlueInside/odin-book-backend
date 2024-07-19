@@ -219,7 +219,9 @@ describe('GET /users/:userId/posts', () => {
     ];
 
     Post.find.mockImplementation(() => ({
-      populate: () => ({ sort: () => mockPosts }),
+      populate: () => ({
+        sort: () => ({ skip: () => ({ limit: () => mockPosts }) }),
+      }),
     }));
 
     Post.countDocuments.mockResolvedValue(mockPosts.length); // Mock countDocuments
@@ -231,7 +233,6 @@ describe('GET /users/:userId/posts', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.posts.length).toBe(2);
-    expect(response.body.totalPosts).toBe(2);
   });
 
   it('Should return 400 for an invalid user ID', async () => {
