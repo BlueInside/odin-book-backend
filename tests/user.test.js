@@ -220,7 +220,9 @@ describe('GET /users/:userId/posts', () => {
 
     Post.find.mockImplementation(() => ({
       populate: () => ({
-        sort: () => ({ skip: () => ({ limit: () => mockPosts }) }),
+        populate: () => ({
+          sort: () => ({ skip: () => ({ limit: () => mockPosts }) }),
+        }),
       }),
     }));
 
