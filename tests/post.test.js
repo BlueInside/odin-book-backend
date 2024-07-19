@@ -197,7 +197,7 @@ describe('GET /posts/:postId', () => {
 
     Comment.find.mockImplementation(() => ({ populate: () => commentMock }));
     Post.findById.mockImplementation(() => ({
-      populate: () => post,
+      populate: () => ({ populate: () => post }),
     }));
 
     const response = await request(app)
@@ -212,7 +212,7 @@ describe('GET /posts/:postId', () => {
   it('Should return 404 if post not found', async () => {
     Comment.find.mockImplementation(() => ({ populate: () => commentMock }));
     Post.findById.mockImplementation(() => ({
-      populate: () => null,
+      populate: () => ({ populate: () => null }),
     }));
 
     const response = await request(app)
