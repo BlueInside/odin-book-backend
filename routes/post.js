@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const postsController = require('../controllers/postsController');
+const { uploadPostImage } = require('../lib/multer');
 const {
   getAllPostsValidation,
   getPostValidation,
@@ -43,6 +44,7 @@ router.get(
 router.post(
   '/',
   authenticateToken,
+  uploadPostImage,
   createPostValidation(),
   postsController.createPost
 );
