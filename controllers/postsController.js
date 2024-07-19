@@ -17,7 +17,7 @@ const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
 
   const totalPosts = await Post.countDocuments({});
   const totalPages = Math.ceil(totalPosts / limit);
-  const hasNextPage = page < totalPosts;
+  const hasNextPage = page < totalPages;
 
   let posts = await Post.find({})
     .populate('author', 'profilePicture firstName')
@@ -66,10 +66,10 @@ const getPersonalizedPosts = asyncHandler(async (req, res, next) => {
 const getPost = asyncHandler(async (req, res, next) => {
   const { postId } = req.params;
 
-  const post = await Post.findById(postId).populate(
-    'author',
-    'firstName profilePicture'
-  );
+  const post = await Post.findById(postId)
+    .populate('author', 'firstName profilePicture')
+    .populate('media', 'url');
+
   if (!post) {
     return res.status(404).json({ message: 'Post not found!' });
   }
