@@ -5,16 +5,17 @@ const Post = require('../models/post');
 const Like = require('../models/like');
 const Comment = require('../models/comment');
 const Follow = require('../models/follow');
+const Media = require('../models/media');
 const mongoose = require('mongoose');
 const app = express();
 const { generateToken } = require('../config/jwt');
-const like = require('../models/like');
 
 // Model mocks
 jest.mock('../models/post'); // Mock the Post model
 jest.mock('../models/like'); // Mock the Like model
 jest.mock('../models/comment'); // Mock the Comment model
-jest.mock('../models/follow'); // Mock the Comment model
+jest.mock('../models/follow'); // Mock the Follow model
+jest.mock('../models/media'); // Mock the Media model
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -138,7 +139,9 @@ describe('GET /posts', () => {
       .fn()
       .mockImplementationOnce(() => ({
         populate: () => ({
-          sort: () => ({ skip: () => ({ limit: () => [] }) }),
+          populate: () => ({
+            sort: () => ({ skip: () => ({ limit: () => [] }) }),
+          }),
         }),
       }))
       .mockImplementationOnce(() => ({
@@ -548,6 +551,8 @@ describe('DELETE /posts/:postId', () => {
       remove: jest.fn(),
     };
 
+    Media.findOne.mockResolvedValue(null);
+    Media.deleteMany.mockResolvedValue({ deletedCount: 0 });
     Post.findById.mockResolvedValue(post);
     Comment.deleteMany.mockResolvedValue({ deletedCount: 0 });
     Like.deleteMany.mockResolvedValue({ deletedCount: 0 });
