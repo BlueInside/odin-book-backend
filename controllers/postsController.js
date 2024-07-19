@@ -215,8 +215,6 @@ const deletePost = asyncHandler(async (req, res, next) => {
   const deletedMedia = await Media.deleteMany({ post: postId });
   const deletedPost = await Post.findByIdAndDelete(postId);
 
-  console.log(`MEDIA: `, deletedMedia.deletedCount);
-
   return res.status(200).json({
     message: 'Post deleted',
     deletedPost: deletedPost,
