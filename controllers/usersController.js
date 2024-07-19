@@ -79,6 +79,7 @@ const getUserPosts = asyncHandler(async (req, res, next) => {
 
   const posts = await Post.find({ author: userId })
     .populate('author', 'profilePicture firstName')
+    .populate('media', 'url')
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit);
