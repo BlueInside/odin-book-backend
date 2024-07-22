@@ -31,6 +31,7 @@ router.get(
       secure: true,
       sameSite: 'None',
       maxAge: 24 * 60 * 60 * 1000,
+      domain: `odin-book-blueinside.netlify.app`,
     });
 
     return res.redirect('https://odin-book-blueinside.netlify.app/');
@@ -62,6 +63,7 @@ router.get('/guest', async (req, res) => {
       secure: true,
       sameSite: 'None',
       maxAge: 24 * 60 * 60 * 1000,
+      domain: `odin-book-blueinside.netlify.app`,
     });
 
     return res.status(200).json({ user: user });
