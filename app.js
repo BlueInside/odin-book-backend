@@ -7,6 +7,7 @@ const passport = require('passport');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const cors = require('cors');
+const compression = require('compression');
 
 // Import passport configuration
 require('./config/passport');
@@ -58,6 +59,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(passport.initialize());
 app.use(limiter);
 app.use(cookieParser());
+app.use(compression());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
