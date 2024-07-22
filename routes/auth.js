@@ -4,6 +4,9 @@ const authenticationController = require('../controllers/authenticationControlle
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const { generateToken, authenticateToken } = require('../config/jwt');
+const User = require('../models/user');
+const { v4: uuidv4 } = require('uuid');
+const { faker } = require('@faker-js/faker');
 
 router.get(
   '/github',
@@ -33,6 +36,41 @@ router.get(
     return res.redirect('http://localhost:5173/');
   }
 );
+
+router.get('/guest', async (req, res) => {
+  try {
+    const randomName = faker.person.firstName();
+    const randomLastName = faker.person.lastName();
+    const randomAvatar = faker.image.avatar();
+
+    const guestId = uuidv4();
+
+    const user = await User.create({
+      githubId: guestId,
+      firstName: randomName,
+      lastName: randomLastName,
+      email: `${randomName}${Math.random() * 10000}@example.com`,
+      profilePicture: randomAvatar,
+      isGuest: true,
+      role: 'user',
+    });
+
+    const token = generateToken(user);
+
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'None',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(302).json({ user: user });
+  } catch (error) {
+    return res
+      .status(500)
+      .send({ message: 'Failed to create guest user', error: error.message });
+  }
+});
 
 router.get('/verify', authenticateToken, authenticationController.verify);
 
