@@ -3,6 +3,11 @@ const request = require('supertest');
 const express = require('express');
 const app = express();
 const cookieParser = require('cookie-parser');
+const User = require('../models/user');
+const { v4: uuidv4 } = require('uuid');
+
+// Mocks
+jest.mock('../models/user');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -55,5 +60,38 @@ describe('GET /validate', () => {
 
     expect(response.status).toBe(401);
     expect(response.body).toHaveProperty('message');
+  });
+});
+
+describe('GET /guest', () => {
+  const mockUser = {
+    githubId: uuidv4(),
+    firstName: 'randomName',
+    lastName: '',
+    email: '',
+    profilePicture: '',
+    isGuest: true,
+    role: 'user',
+  };
+
+  User.create.mockResolvedValue(mockUser);
+
+  it('should create a guest user and redirect with a cookie', async () => {
+    const response = await request(app).get('/guest');
+
+    expect(response.headers['set-cookie']).toBeDefined();
+    expect(response.status).toBe(302);
+  });
+
+  it('should handle errors properly when user creation fails', async () => {
+    User.create.mockRejectedValue(new Error('Failed to create user'));
+
+    const response = await request(app).get('/guest');
+
+    expect(response.status).toBe(500);
+    expect(response.body).toHaveProperty(
+      'message',
+      'Failed to create guest user'
+    );
   });
 });
