@@ -21,6 +21,9 @@ const usersRouter = require('./routes/user');
 
 const app = express();
 
+// Trust proxy
+app.set('trust proxy', true);
+
 // Rate limiter settings
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000,
