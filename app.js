@@ -21,11 +21,15 @@ const usersRouter = require('./routes/user');
 
 const app = express();
 
+// Trust proxy
+app.set('trust proxy', true);
+
 // Rate limiter settings
 const limiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   limit: 100,
   standardHeaders: true,
+  legacyHeaders: false,
   handler: (req, res) => {
     res.status(429).json({
       message: 'Too many requests, please try again later.',
