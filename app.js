@@ -21,7 +21,7 @@ const app = express();
 
 // Rate limiter settings
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 10 * 60 * 1000,
   limit: 100,
   standardHeaders: true,
   legacyHeaders: false,
@@ -56,7 +56,7 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(passport.initialize());
-// app.use(limiter);
+app.use(limiter);
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
