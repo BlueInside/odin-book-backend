@@ -130,7 +130,6 @@ const createPost = asyncHandler(async (req, res, next) => {
         req.file.buffer,
         'odin-book-medias'
       );
-      console.log('Profile picture upload successful:', result);
       const newMedia = new Media({
         url: result.url,
         type: 'image',
@@ -141,7 +140,6 @@ const createPost = asyncHandler(async (req, res, next) => {
       await newMedia.save();
       newPost.media = newMedia._id;
     } catch (error) {
-      console.error('Upload failed', error);
       if (error.message === 'An unknown file format not allowed')
         return res.status(500).json({
           error: `Image must be in: 'jpg', 'png', 'gif' or 'webp' format.`,
@@ -203,7 +201,7 @@ const deletePost = asyncHandler(async (req, res, next) => {
     cloudinary.uploader
       .destroy(media.publicId, { type: 'upload', resource_type: 'image' })
       .then((result) => {
-        console.log(`Media successfully removed from cloudinary: `, result);
+        console.log(`Media successfully removed from cloudinary: `);
       })
       .catch((error) => {
         console.log('Error removing media: ', error);

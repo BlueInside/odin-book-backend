@@ -147,7 +147,7 @@ const updateUser = asyncHandler(async (req, res, next) => {
         fileBuffer,
         'odin-book-profilePictures'
       );
-      console.log('Profile picture upload successful:', profilePictureResult);
+      console.log('Profile picture upload successful:');
       updates.profilePicture = profilePictureResult.url;
     } catch (error) {
       console.error('Upload failed', error);
@@ -168,7 +168,7 @@ const updateUser = asyncHandler(async (req, res, next) => {
         fileBuffer,
         'odin-book-profilePictures'
       );
-      console.log('Cover photo upload successful:', coverPhotoResult);
+      console.log('Cover photo upload successful:');
       updates.coverPhoto = coverPhotoResult.url;
     } catch (error) {
       console.error('Upload failed', error);
