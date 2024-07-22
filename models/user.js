@@ -9,10 +9,10 @@ const options = {
 
 const userSchema = new Schema(
   {
-    githubId: { type: String, required: true, unique: true }, // Ensure uniqueness
+    githubId: { type: String, required: false, unique: false },
     firstName: { type: String, required: true, index: true },
     lastName: { type: String, index: true, default: '' }, // Set default if empty
-    email: { type: String, unique: true, sparse: true }, // Make email sparse for uniqueness only when it is provided
+    email: { type: String },
     profilePicture: { type: String },
     birthday: { type: Date },
     coverPhoto: { type: String },
@@ -30,6 +30,7 @@ const userSchema = new Schema(
       required: true,
       default: 'user',
     },
+    isGuest: { type: Boolean, default: false },
   },
   options
 );
