@@ -17,7 +17,7 @@ router.get(
   '/github/callback',
   passport.authenticate('github', {
     session: false,
-    failureRedirect: 'http://localhost:5173/sign',
+    failureRedirect: 'https://odin-book-blueinside.netlify.app/',
   }),
 
   function (req, res) {
@@ -33,7 +33,7 @@ router.get(
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    return res.redirect('http://localhost:5173/');
+    return res.redirect('https://odin-book-blueinside.netlify.app/');
   }
 );
 
