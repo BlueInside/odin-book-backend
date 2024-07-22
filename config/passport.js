@@ -1,9 +1,8 @@
+require('dotenv').config();
 const GitHubStrategy = require('passport-github2').Strategy;
 const passport = require('passport');
 
 const User = require('../models/user');
-
-require('dotenv').config();
 
 const verify = async (accessToken, refreshToken, profile, cb) => {
   try {
