@@ -80,7 +80,7 @@ describe('GET /guest', () => {
     const response = await request(app).get('/guest');
 
     expect(response.headers['set-cookie']).toBeDefined();
-    expect(response.status).toBe(302);
+    expect(response.status).toBe(200);
   });
 
   it('should handle errors properly when user creation fails', async () => {
