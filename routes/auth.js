@@ -64,7 +64,7 @@ router.get('/guest', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    return res.status(302).json({ user: user });
+    return res.status(200).json({ user: user });
   } catch (error) {
     return res
       .status(500)
