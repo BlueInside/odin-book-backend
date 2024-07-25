@@ -33,7 +33,7 @@ router.get(
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    return res.redirect('https://odin-book-blueinside.netlify.app/');
+    return res.redirect(`http://localhost:5173/auth-success/?token=${token}`);
   }
 );
 
@@ -64,7 +64,7 @@ router.get('/guest', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    return res.status(200).json({ user: user });
+    return res.status(200).json({ user: user, token: token });
   } catch (error) {
     return res
       .status(500)
