@@ -33,7 +33,9 @@ router.get(
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    return res.redirect(`http://localhost:5173/auth-success/?token=${token}`);
+    return res.redirect(
+      `https://odin-book-blueinside.netlify.app/auth-success/?token=${token}`
+    );
   }
 );
 
