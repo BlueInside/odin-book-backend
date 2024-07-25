@@ -34,7 +34,7 @@ router.get(
     });
 
     return res.redirect(
-      `https://odin-book-blue.netlify.app/auth-success/?token=${token}`
+      `https://odin-book-blueinside.netlify.app/auth-success/?token=${token}`
     );
   }
 );
