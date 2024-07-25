@@ -39,7 +39,11 @@ const limiter = rateLimit({
 
 // CORS settings
 const corsOptions = {
-  origin: ['http://localhost:5173', 'https://odin-book-blueinside.netlify.app'],
+  origin: [
+    'http://localhost:5173',
+    'https://odin-book-blueinside.netlify.app',
+    'https://odin-book-blue.netlify.app',
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
   optionsSuccessStatus: 200,
